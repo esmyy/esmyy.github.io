@@ -29,6 +29,11 @@
   --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
 }
 
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+@tailwind screens;
+
 .tag {
   padding: 8px;
   border-radius: 6px;
@@ -36,4 +41,8 @@
 
 .tag-primary {
   background-color: #ede0d9;
+}
+
+.danger-tag {
+  background-color: red;
 }

@@ -4,15 +4,15 @@ https://web.dev/learn/html/
 
 ## Doctype
 
-混杂模式，标准模式？不同模式下的盒模型的区别？
+我刚接触那会可能还需要注意下，现在除了一些政务之类的网站，都没在用了。
 
-理解，然后绕过去，然后可以忘记。
-
-按照标准的走就完事了
+别纠结啥标准模式，兼容模式，DTD 了，按照标准的走就完事了
 
 ```html
-<!doctype html>
+<!DOCTYPE html>
 ```
+
+也别啥 HTML 和 XHTML 区别了，按照严格的，标准的走完事，交给工具检查格式化完事。
 
 ## lang
 
@@ -57,3 +57,4 @@ Semantic HTML 使用 header、section、footer 等语义更明确的标签来直
 ```
 
 ```
+
