@@ -1,21 +1,13 @@
 # 发布订阅
 
-```ts
+```js
 class Emitter {
-  constructor() {
+  constructor() {}
 
-  }
+  on() {}
 
-  on() {
+  off() {}
 
-  }
-
-  off() {
-
-  }
-
-  emit() {
-
-  }
+  emit() {}
 }
 ```
