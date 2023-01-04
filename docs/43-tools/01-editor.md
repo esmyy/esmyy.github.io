@@ -1,8 +1,6 @@
 # 编辑器
 
-## 代码编辑
-
-VS Code 还是 WebStorm ？年轻的时候小小纠结过一会儿，都足够好用，想用啥用啥，纠结个屁。
+`VS Code` 还是 `WebStorm` ？，想用啥用啥，不纠结。
 
 用过 WebStorm
 
@@ -16,7 +14,3 @@ VS Code 还是 WebStorm ？年轻的时候小小纠结过一会儿，都足够�
 - 足够好用
 - 同步也已经十分方便
 - snippets 配置很爽，WebStorm 的 Snippets 配置比较麻烦
-
-## 文档编辑
-
-VS Code
