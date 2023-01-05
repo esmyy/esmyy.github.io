@@ -14,3 +14,7 @@
 - 足够好用
 - 同步也已经十分方便
 - snippets 配置很爽，WebStorm 的 Snippets 配置比较麻烦
+
+## 终端
+
+iTerm2 + OH-My-ZSH
