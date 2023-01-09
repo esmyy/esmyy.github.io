@@ -1,3 +1,4 @@
+# base
 
 ## Doctype
 
@@ -8,7 +9,7 @@
 按照标准的走就完事了
 
 ```html
-<!doctype html>
+<!DOCTYPE html>
 ```
 
 ## Semantic HTML
