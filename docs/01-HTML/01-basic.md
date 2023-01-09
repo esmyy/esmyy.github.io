@@ -1,6 +1,6 @@
-# hello
+# 一些基础概念
 
-https://web.dev/learn/html/
+<https://web.dev/learn/html/>
 
 ## Doctype
 
@@ -15,6 +15,17 @@ https://web.dev/learn/html/
 也别啥 HTML 和 XHTML 区别了，按照严格的，标准的走完事，交给工具检查格式化完事。
 
 ## lang
+
+目前普遍是使用 语言码+地区码 的值，比如 google.com.hk
+
+```html
+<html itemscope="" itemtype="http://schema.org/WebPage" lang="zh-HK">
+  <!-- ... -->
+</html>
+```
+
+这并不规范，但在 Web 中很多俗成的实践比支持不到位的规范更重要。
+规范的 [RFC 5646](https://datatracker.ietf.org/doc/html/rfc5646) 我并没有细看，很长的一段时间内，都仍旧这样使用即可。
 
 ## Semantic HTML
 
@@ -57,4 +68,3 @@ Semantic HTML 使用 header、section、footer 等语义更明确的标签来直
 ```
 
 ```
-
