@@ -11,7 +11,42 @@ JS 包管理，有三个组成部分
 1. 就是将 JS 包添加到共享平台，每个包遵循一些约定，有版本，功能说明等内容。
 2. 使用时从平台下载所需的包。
 
-## npm
+## npm 命令
+
+查看 npm 命令所在
+
+```shell
+➜  ~ which npm
+/Users/esmyy/.nvm/versions/node/v16.19.0/bin/npm
+➜  ~ la /Users/esmyy/.nvm/versions/node/v16.19.0/bin/npm
+lrwxr-xr-x  1 esmyy  staff    38B 12 13 15:19 /Users/esmyy/.nvm/versions/node/v16.19.0/bin/npm -> ../lib/node_modules/npm/bin/npm-cli.js
+```
+
+本机 node 是通过 nvm 安装的，这个地址是一个软链接，可以看到实际 npm 命令是指向了 npm-cli.js。
+
+## npm i
+
+在 **node/v16.19.0/bin/** 目录下的命令，除了 node，其他都是软连接，指向位置都是
+
+**../node_modules/命令对应包/package.json 里指定的 bin 文件**
+
+```shell
+➜  bin git:(9600617) pwd
+/Users/esmyy/.nvm/versions/node/v16.19.0/bin
+➜  bin git:(9600617) la
+total 181928
+lrwxr-xr-x  1 esmyy  staff    45B 12 13 15:19 corepack -> ../lib/node_modules/corepack/dist/corepack.js
+lrwxr-xr-x  1 esmyy  staff    32B 12 27 19:16 lerna -> ../lib/node_modules/lerna/cli.js
+-rwxr-xr-x  1 esmyy  staff    75M 12 13 15:19 node
+lrwxr-xr-x  1 esmyy  staff    38B 12 13 15:19 npm -> ../lib/node_modules/npm/bin/npm-cli.js
+lrwxr-xr-x  1 esmyy  staff    38B 12 13 15:19 npx -> ../lib/node_modules/npm/bin/npx-cli.js
+lrwxr-xr-x  1 esmyy  staff    30B  1  3 10:53 nrm -> ../lib/node_modules/nrm/cli.js
+lrwxr-xr-x  1 esmyy  staff    36B 12 26 12:34 yarn -> ../lib/node_modules/yarn/bin/yarn.js
+lrwxr-xr-x  1 esmyy  staff    36B 12 26 12:34 yarnpkg -> ../lib/node_modules/yarn/bin/yarn.js
+lrwxr-xr-x  1 esmyy  staff    33B  1  3 18:47 yo -> ../lib/node_modules/yo/lib/cli.js
+lrwxr-xr-x  1 esmyy  staff    46B  1  3 18:47 yo-complete -> ../lib/node_modules/yo/lib/completion/index.js
+➜  bin git:(9600617)
+```
 
 ### npm run
 
