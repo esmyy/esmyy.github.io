@@ -27,3 +27,15 @@ css: rem,en，移动端布局方案
 浏览器的并发连接数
 
 iframe 的优缺点 —— 6 个并发连接是 tab 的，还是单域名，还是？
+
+flow
+
+## react
+
+stack reconciler, fiber
+
+core
+
+render
+
+invariant

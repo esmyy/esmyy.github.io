@@ -12,7 +12,7 @@ const config = {
   baseUrl: "/",
   onBrokenLinks: "throw",
   onBrokenMarkdownLinks: "warn",
-  favicon: "img/favicon.ico",
+  favicon: "img/favicon.png",
 
   // GitHub pages deployment config.
   // If you aren't using GitHub pages, you don't need these.
@@ -63,7 +63,6 @@ const config = {
         maxHeadingLevel: 5,
       },
       navbar: {
-        title: "esmyy",
         logo: {
           alt: "logo",
           src: "img/favicon.png",
@@ -71,10 +70,24 @@ const config = {
         items: [
           {
             position: "left",
-            label: "Docs",
+            label: "技术手册",
             to: "/docs/intro",
           },
-          { to: "https://esmyy.com", label: "Blog", position: "left" },
+          {
+            to: "/docs/frameworks/react",
+            label: "React",
+            position: "left",
+          },
+          {
+            to: "/docs/frameworks/vue3",
+            label: "Vue 3",
+            position: "left",
+          },
+          {
+            to: "/docs/frameworks/vue2",
+            label: "Vue 2",
+            position: "left",
+          },
           {
             href: "https://github.com/esmyy",
             label: "GitHub",
