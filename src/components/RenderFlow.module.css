@@ -1,0 +1,18 @@
+.wrapper {
+  margin-bottom: 12px;
+}
+.step {
+  background-color: #3eaf7c;
+  padding: 6px 12px;
+  color: #fff;
+  border: 1px solid #333;
+  border-radius: 4px;
+}
+
+.danger {
+  background-color: red;
+}
+
+.gray {
+  background-color: grey;
+}

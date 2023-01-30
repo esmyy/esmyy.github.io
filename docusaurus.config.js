@@ -70,21 +70,21 @@ const config = {
         items: [
           {
             position: "left",
-            label: "技术手册",
+            label: "知识手册",
             to: "/docs/intro",
           },
           {
-            to: "/docs/frameworks/react",
+            to: "/docs/frameworks/react/overview",
             label: "React",
             position: "left",
           },
           {
-            to: "/docs/frameworks/vue3",
+            to: "/docs/frameworks/vue3/overview",
             label: "Vue 3",
             position: "left",
           },
           {
-            to: "/docs/frameworks/vue2",
+            to: "/docs/frameworks/vue2/overview",
             label: "Vue 2",
             position: "left",
           },
