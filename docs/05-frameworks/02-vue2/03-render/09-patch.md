@@ -356,7 +356,7 @@ demo.elm 会插入到 `<div class="header">` 这个元素中
 
 所谓的 diff，diff 啥？就是新老虚拟 DOM 树的比较，而所谓 VDOM 的性能优势，就体现在根据新老 VDOM 比较，进而生成 DOM 这个过程。
 
-视图更新的情况，涉及到诸多比较，在 [视图更新](/docs/frameworks/vue2/reactivity/component-update) 单独说明。
+视图更新的情况，涉及到诸多比较，在 [视图更新](../04-reactivity/05-view-update.md) 单独说明。
 
 ## 总结
 

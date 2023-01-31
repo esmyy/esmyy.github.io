@@ -17,7 +17,7 @@ new Vue({
 
 ## initData
 
-data 的初始化，是在 Vue.prototype.\_init 中，是在 beforeCreat 到 created 之间的 initState
+data 的初始化，是在 Vue.prototype.\_init 中，是在 beforeCreate 到 created 之间的 initState
 
 ```js
 callHook(vm, "beforeCreate");
@@ -250,7 +250,7 @@ observeArray (items: Array<any>) {
 }
 ```
 
-这个 observeArray 的意思就是，对于数组里面的每一项，如果是一个对象，则设置监听。在 observe 中一开始就会判断，如果 items[i](item) 是一个对象则设置监听，给 item 添加 Observer 实例到 `item.__ob__` 上，如果是个原始值，直接就撂挑子返回了。
+这个 observeArray 的意思就是，对于数组里面的每一项，如果是一个对象，则设置监听。在 observe 中一开始就会判断，如果 `items[i](item)` 是一个对象则设置监听，给 item 添加 Observer 实例到 `item.__ob__` 上，如果是个原始值，直接就撂挑子返回了。
 
 其中两个 `xxxAugment` 如下
 

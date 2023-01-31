@@ -7,7 +7,7 @@ const footer = {
         {
           label: "Tutorial",
           docId: "intro",
-          to: "/docs",
+          to: "/docs/intro",
         },
       ],
     },
@@ -33,7 +33,7 @@ const footer = {
       items: [
         {
           label: "Blog",
-          to: "/blog",
+          to: "https://www.esmyy.com/blog",
         },
         {
           label: "GitHub",
