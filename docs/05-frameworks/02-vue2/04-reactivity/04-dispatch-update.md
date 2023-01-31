@@ -350,7 +350,7 @@ run () {
 }
 ```
 
-watcher.run 就是执行了 watcher.get 函数，根据前面在 [Watcher](/docs/frameworks/vue2/render/watcher.md) 中的说明，对于 render watcher，这个就是进入到 updateComponent 的过程，即更新组件，也就是说 DOM 的更新是在这里实现的。
+watcher.run 就是执行了 watcher.get 函数，根据前面在 [Watcher](/docs/frameworks/vue2/render/watcher) 中的说明，对于 render watcher，这个就是进入到 updateComponent 的过程，即更新组件，也就是说 DOM 的更新是在这里实现的。
 
 再往下
 
