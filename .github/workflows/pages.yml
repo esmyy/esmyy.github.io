@@ -3,8 +3,8 @@ name: Pages
 on:
   push:
     paths:
-      - "source/**"
-      - "themes/esmyy/**"
+      - "src/**"
+      - "docs/**"
     branches:
       - main # default branch
 
