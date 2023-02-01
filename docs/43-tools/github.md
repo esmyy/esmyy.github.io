@@ -20,7 +20,7 @@ www.esmyy.com
 
 ### 子路径
 
-如果配置了一个仓库，比如 /docs，这个仓库也开启了 Github Pages，那么访问 `www.esmyy.com/docs` 就是匹配 /docs 目录下的文件
+如果配置了一个仓库，比如 /docs，这个仓库也开启了 Github Pages，那么访问 `www.esmyy.com/docs` 就是匹配 /docs 仓库下的文件
 
 ### workflow 配置示例
 
@@ -75,3 +75,14 @@ jobs:
 在`Settings -> Pages -> Build and deployment` 中切换为发布分支，即可正常访问。
 
 后续只要正常在 main 分支推送即可，其他的 workflows 会自动处理完成。
+
+如果遇到提示 403 或者
+
+```bash
+Error: The process '/usr/bin/git' failed with exit code 128
+```
+
+就是权限没对，在`Settings -> Pages -> Actions/generate` 下勾选以下选项即可
+
+- Read and write permissions
+- Allow Github Actions to create and approve pull requests

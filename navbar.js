@@ -7,7 +7,7 @@ module.exports = {
     {
       position: "left",
       label: "手册",
-      to: "/docs/intro",
+      to: "/docs",
     },
     {
       to: "/docs/frameworks/react/overview",
