@@ -5,6 +5,9 @@ on:
     paths:
       - "src/**"
       - "docs/**"
+      - "footer.js"
+      - "navbar.js"
+      - "sidebars.js"
     branches:
       - main # default branch
 
