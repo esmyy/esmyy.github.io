@@ -6,7 +6,6 @@ const footer = {
       items: [
         {
           label: "Tutorial",
-          docId: "intro",
           to: "/docs/intro",
         },
       ],

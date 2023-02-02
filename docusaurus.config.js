@@ -15,6 +15,14 @@ const config = {
   onBrokenLinks: "throw",
   onBrokenMarkdownLinks: "warn",
   favicon: "img/favicon.png",
+  customFields: {
+    cover: {
+      textColor: "#fff",
+      img: "https://cdn.jsdelivr.net/gh/esmyy/imghost@main/images/air-beijing-chengdu.jpg",
+      description: "北京飞往成都",
+      date: "2022年10月11日",
+    },
+  },
 
   // GitHub pages deployment config.
   // If you aren't using GitHub pages, you don't need these.

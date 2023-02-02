@@ -1,0 +1,71 @@
+.firstScreen {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  /* background-image: linear-gradient(to top, #cfd9df 0%, #e2ebf0 100%); */
+  background-position-y: bottom;
+  background-size: cover;
+  background-image: url("https://cdn.jsdelivr.net/gh/esmyy/imghost@main/images/air-beijing-chengdu.jpg");
+}
+
+.hidden {
+  display: none;
+  opacity: 0;
+  transition: opacity 1s ease;
+}
+
+.lifeCard {
+  position: absolute;
+  left: 50%;
+  top: 30%;
+  transform: translateX(-50%);
+  background-color: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+  padding: 20px;
+  text-align: center;
+  line-height: 30px;
+  width: 240px;
+}
+
+.pictureIntroduction {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  line-height: 24px;
+}
+
+.descLine {
+  display: flex;
+  align-items: center;
+  color: #fff;
+}
+
+.entriesInsideWrapper {
+  display: block;
+}
+
+.entriesOutsideWrapper {
+  display: none;
+}
+
+@media screen and (max-width: 768px) {
+  .firstScreen {
+    height: 36vh;
+  }
+
+  .lifeCard {
+    top: 36%;
+    padding: 12px;
+  }
+  .pictureIntroduction {
+    bottom: 12px;
+    right: 12px;
+  }
+  .entriesInsideWrapper {
+    display: none;
+  }
+
+  .entriesOutsideWrapper {
+    display: block;
+  }
+}
