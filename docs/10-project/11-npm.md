@@ -13,19 +13,9 @@ JS 包管理，有三个组成部分
 - 共享：将 JS 包添加到共享平台
 - 使用：使用时从平台下载所需的包
 
-## 为什么
+本文将讲解 npm 命令，同时负责共享推送，使用拉取的工具。
 
-为什么要研究 npm 命令？
-
-:::caution
-这个问题要想清楚，不要为了看源码而看源码，做的研究，真的有价值么？
-:::
-
-## npm 命令
-
-阅读一下 npm 命令的源码，看一看其实现
-
-### 定位命令
+## 定位所在
 
 查看 npm 命令所在
 
@@ -58,16 +48,87 @@ lrwxr-xr-x  1 esmyy  esmyy    46B  1  3 18:47 yo-complete -> ../lib/node_modules
 ➜  bin git:(9600617)
 ```
 
-这个对应关系，是在各个包的 package.json 里面维护的，比如对于 npm 命令，在`.nvm/versions/node/v16.19.0/lib/node_modules/npm/package.json`有这个以下定义
+这个对应关系，是在各个包的 package.json 里面维护的，比如对于 npm 命令，有以下定义
 
-```json
+```json title=".nvm/versions/node/v16.19.0/lib/node_modules/npm/package.json"
 "bin": {
   "npm": "bin/npm-cli.js",
   "npx": "bin/npx-cli.js"
 },
 ```
 
-### 源码解读
+其中
+
+```bash title=".nvm/versions/node/v16.19.0/lib/node_modules/npm/bin/npm-cli.js"
+#!/usr/bin/env node
+require("../lib/cli.js")(process);
+```
+
+因此定位到 npm 命令实现在 `lib/cli.js`。
+
+```js title=".nvm/versions/node/v16.19.0/lib/node_modules/npm/lib/cli.js"
+module.exports = async (process) => {
+  // ...npm版本检查，错误监听登，分析时省略
+  const Npm = require("./npm.js");
+  const npm = new Npm();
+
+  let cmd;
+  try {
+    await npm.load();
+
+    // npm --version
+    if (npm.config.get("version", "cli")) {
+      npm.output(npm.version);
+      return exitHandler();
+    }
+
+    // npm --versions=cli
+    if (npm.config.get("versions", "cli")) {
+      npm.argv = ["version"];
+      npm.config.set("usage", false, "cli");
+    }
+
+    // 不带参数，打印使用说明
+    cmd = npm.argv.shift();
+    if (!cmd) {
+      npm.output(await npm.usage);
+      process.exitCode = 1;
+      return exitHandler();
+    }
+
+    // 执行命令
+    await npm.exec(cmd, npm.argv);
+    return exitHandler();
+  } catch (err) {
+    // ...未知参数等异常处理
+  }
+};
+```
+
+直接执行 `npm-cli.js`
+
+```shell
+node ../bin/npm-cli.js run dev
+```
+
+这个时候 process.argv 是下面这样的
+
+```js
+[
+  "/Users/fengpeng/.nvm/versions/node/v16.19.0/bin/node",
+  "/Users/fengpeng/.nvm/versions/node/v16.19.0/lib/node_modules/npm/bin/npm-cli.js",
+  "run",
+  "dev",
+];
+```
+
+`cli.js` 只是一个简单的对 npm 实例的调用管理,具体的实现在 `npm.js` 的 Npm 类，这个才是了解 npm 命令的核心
+
+:::tips 小结
+
+<!-- npm 是一个 JS 实现的函数，加入 -->
+
+:::
 
 ## .npmrc
 
@@ -159,3 +220,5 @@ npx 只是一些偶尔需要时的便利，对于工程本身并无特别作用�
 [nrm](https://github.com/Pana/nrm)
 
 [npx](https://github.com/zkat/npx)
+
+## 关联知识
