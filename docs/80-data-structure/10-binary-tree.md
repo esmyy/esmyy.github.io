@@ -32,6 +32,35 @@ _root.right = right;
 export const root = _root;
 ```
 
+## 最大深度
+
+从根到最远叶子节点的层树，也是节点数。
+
+最大深度的计算，需要做一次遍历，每一个节点记录自身的深度，依次向下时深度+1，比较当前深度和已知的最大深度，取最大值。
+
+```ts title="maxDepth.ts"
+const maxDepth = function (root: TreeNode) {
+  if (!root) {
+    return 0;
+  }
+
+  let max = 0;
+  const traversal = function foo(node: TreeNode, depth: number) {
+    max = Math.max(depth, max);
+    if (node.left) {
+      foo(node.left, depth + 1);
+    }
+
+    if (node.right) {
+      foo(node.right, depth + 1);
+    }
+  };
+
+  traversal(root, 1);
+  return max;
+};
+```
+
 ## 深度优先搜索
 
 DFS(Depth First Search) 深度优先搜索有前序、中序和后序遍历三种情况，一般遍历后返回节点值数组
@@ -129,35 +158,6 @@ const postOrderTraversal: TBinaryTraversalFn = function (root) {
 };
 
 console.log(postOrderTraversal(root)); // [ 2, 3, 1 ]
-```
-
-## 最大深度
-
-从根到最远叶子节点的层树，也是节点数。
-
-最大深度的计算，需要做一次遍历，每一个节点记录自身的深度，依次向下时深度+1，比较当前深度和已知的最大深度，取最大值。
-
-```ts title="maxDepth.ts"
-const maxDepth = function (root: TreeNode) {
-  if (!root) {
-    return 0;
-  }
-
-  let max = 0;
-  const traversal = function foo(node: TreeNode, depth: number) {
-    max = Math.max(depth, max);
-    if (node.left) {
-      foo(node.left, depth + 1);
-    }
-
-    if (node.right) {
-      foo(node.right, depth + 1);
-    }
-  };
-
-  traversal(root, 1);
-  return max;
-};
 ```
 
 ## 广度优先搜索
