@@ -14,13 +14,13 @@
 
 配置的话，就是从 [这里](https://github.com/ohmyzsh/ohmyzsh/wiki/Themes) 选一个主题，从[Plugins Overview](https://github.com/ohmyzsh/ohmyzsh/wiki/Plugins-Overview) 配置一些好用的插件。
 
-很多插件都是比较简单的一些 alias，我自己是比较喜欢根据需要添加 alias 的，发现和一些已有插件的有重叠。
-
-我的插件列表
+很多插件都是比较简单的一些 alias，我的插件列表较为简单
 
 ```txt
 plugins=(git extract gitignore Z)
 ```
+
+我有在本地定制自己的插件，很多功能有自定义实现，不需要安装特别多的插件。
 
 ## alias
 

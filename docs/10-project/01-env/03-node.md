@@ -1,24 +1,34 @@
-# nvm
+# Node
+
+Node 我使用 [nvm](https://github.com/nvm-sh/nvm) 进行管理
 
 > Node Version Manager - POSIX-compliant bash script to manage multiple active node.js versions
-> <https://github.com/nvm-sh/nvm>
 
 本文以 zsh 中使用 nvm 为例，看一下 nvm 咋搞的，记一些值得一说的地方
 
-## 安装
+## nvm 安装
 
-安装时会在 .zshrc 中添加以下内容
+```bash
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.3/install.sh | bash
+
+# or
+wget -qO- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.3/install.sh | bash
+```
+
+安装时会在 zsh 的配置文件`.zshrc`添加以下内容
 
 ```shell title="~/.zshrc"
 export NVM_DIR="$([ -z "${XDG_CONFIG_HOME-}" ] && printf %s "${HOME}/.nvm" || printf %s "${XDG_CONFIG_HOME}/nvm")"
 [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" # This loads nvm
 ```
 
-`.zshrc`新增的配置不会在已打开的终端窗口生效，需要执行一下
+新增的配置不会在已打开的终端窗口生效，需要执行一下刷新
 
 ```shell
 source ~/.zshrc
 ```
+
+如果执行 nvm 命令，遇到 `command not found` 的提示，要么是 .zshrc 没有添加成功 load 的两行代码，要么是没有刷新。
 
 ## 目录结构
 
@@ -51,7 +61,9 @@ source ~/.zshrc
 - alias: node 版本号别名存储
 - versions: 不同版本 node 所在
 
-## 实现
+本文将会解释 nvm.sh 和 alias 的一些作用及实现。
+
+## nvm.sh
 
 安装时在`.zshrc`添加的两行代码，值得关注一下
 
@@ -114,13 +126,19 @@ Now using node v16.19.0 (npm v8.19.3)
 ➜  ~
 ```
 
-使用 export 导出的变量，只在当前终端窗口有效，所以换到新的一个终端，node 还是之前的版本。
+使用 export 导出的变量，只是临时切换，在当前终端窗口有效，所以换到新的一个终端，node 还是之前的版本。
 
 ## nvm alias
 
-我个人比较喜欢用 alias，自己的 MacBook Pro 也添加了一堆的 alias。nvm 的 alias 命令也有点意思。
+其中已安装的`lts` node 版本具有别名，保存在`.nvm/alias`目录里，比如`gallium`，其内容就是对应的版本号
 
-```shell
+```txt title=".nvm/alias/lts/gallium"
+v16.19.0
+```
+
+`nvm alias` 就是列出这些 alias
+
+```shell {2,7-100}
 ➜ nvm alias
 default -> 14 (-> v14.19.2)
 iojs -> N/A (default)
@@ -137,11 +155,7 @@ lts/fermium -> v14.21.2 (-> N/A)
 lts/gallium -> v16.19.0
 ```
 
-其中已安装的`lts`版本具有别名，保存在`.nvm/alias`目录里，比如`gallium`，其内容就是对应的版本号
-
-```txt title=".nvm/alias/lts/gallium"
-v16.19.0
-```
+其中高亮部分 `default` 和 `lts/x` 是保存在 alias 目录下对应的文件。其他几个做一下说明
 
 ### 设置默认版本
 

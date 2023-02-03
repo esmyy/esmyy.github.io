@@ -1,6 +1,7 @@
 import MDXComponents from "@theme-original/MDXComponents";
 import { DoNotCare } from "../components/DoNotCare";
 import { Hidden } from "../components/Hidden";
+import { MyImg } from "../components/MyImg";
 import { ThanksIe } from "../components/ThanksIe";
 import { RenderFlow } from "./../components/RenderFlow";
 export default {
@@ -9,4 +10,5 @@ export default {
   ThanksIe,
   Hidden,
   RenderFlow,
+  MyImg,
 };
