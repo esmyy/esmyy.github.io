@@ -68,31 +68,15 @@ git config user.name esmyy -g
 
 ## commit 规范
 
-## 部分常用命令
+## 常用命令
 
-```shell
-# status
-git status
-git status -s
+相关图形化工具很多，不一定需要用命令，只是我个人比较喜欢用命令，平时会以命令行为主。
+像有些场景，比如需要查历史记录，git log 相关的参数特别多，我一般就只用一个 —— Oh-My-Zsh 提供的 `glog`，其他的我使用两个插件辅助
 
-# diff
-git diff
-git diff --staged
+- Git Grpph
+- GitLens
 
-# add
-git add .
-
-# commit
-git commit -m "msg"
-
-# add and commit
-git commit -am "msg"
-
-# 从暂存区删除，从项目中删除
-git rm xx
-
-# 从暂存区删除，项目中保留
-```
+其他的实在不记得，再快速检索一下 [Pro Git 2](https://git-scm.com/book/zh/v2/) 😂 我没有看 man 文件的习惯，感觉不够易读
 
 ## alias
 
@@ -108,6 +92,19 @@ alias email="git config user.email"
 ```
 
 我还使用了 [Oh-My-Zsh 的 git 插件](https://github.com/ohmyzsh/ohmyzsh/blob/master/plugins/git/git.plugin.zsh)，其中提供了丰富的 alias，能够极大地提高操作效率。
+
+## merge vs rebase
+
+[merge 解释](https://git-scm.com/book/zh/v2/Git-%E5%88%86%E6%94%AF-%E5%88%86%E6%94%AF%E7%9A%84%E6%96%B0%E5%BB%BA%E4%B8%8E%E5%90%88%E5%B9%B6#_basic_merging)
+
+[rebase 解释](https://git-scm.com/book/zh/v2/Git-%E5%88%86%E6%94%AF-%E5%8F%98%E5%9F%BA)
+
+> 有一种观点认为，仓库的提交历史即是 记录实际发生过什么。 它是针对历史的文档，本身就有价值，不能乱改。 从这个角度看来，改变提交历史是一种亵渎，你使用 谎言 掩盖了实际发生过的事情。 如果由合并产生的提交历史是一团糟怎么办？ 既然事实就是如此，那么这些痕迹就应该被保留下来，让后人能够查阅。 <br/><br/>
+> 另一种观点则正好相反，他们认为提交历史是 项目过程中发生的事。 没人会出版一本书的第一版草稿，软件维护手册也是需要反复修订才能方便使用。 持这一观点的人会使用 rebase 及 filter-branch 等工具来编写故事，怎么方便后来的读者就怎么写。 <br/><br/>
+> 总的原则是，只对尚未推送或分享给别人的本地修改执行变基操作清理历史， 从不对已推送至别处的提交执行变基操作，这样，你才能享受到两种方式带来的便利。
+
+总结来说，merge 会保留所有提交的完整记录，每次 merge 会有一个
+从我的经验来说，当多人改动同一块地方时，如果采用 rebase 的方式，会产生比较多的冲突
 
 ## .gitignore
 
