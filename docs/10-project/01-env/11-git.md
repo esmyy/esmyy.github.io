@@ -144,6 +144,8 @@ Array.from(document.querySelectorAll('[data-testid="group-name"]')).map(
 
 ## 实现原理
 
+理解 git 的实现原理，我认为首先要有这样一个意识 —— 历史记录必然是持久地保存在了某些地方，只要找到这些存储，按照一定的方式去还原即可得到。
+
 <https://github.com/ohmyzsh/ohmyzsh/tree/master/plugins/git>
 
 ~/.oh-my-zsh/plugins/git/git.plugin.zsh
@@ -185,9 +187,16 @@ Array.from(document.querySelectorAll('[data-testid="group-name"]')).map(
 └── pack
 ```
 
+这里的文件是 40 位的 hash 校验和，前两位作为文件夹名字，后 38 位作为文件名。
+
 文件的每个版本对应一个文件，这些文件称作数据对象。
 
-数据对象文件是 40 位的校验和，前两位作为文件夹名字，后 38 位作为文件名。
+使用 `git cat-file -p [数据对象hash]` 命令，可以查看数据对象的内容
+
+```sh
+git cat-file -p d670460b4b4aece5915caf5c68d12f560a9fe3e4
+test content
+```
 
 **值得注意的是，这里虽然每个数据对象文件都对应着某个文件的某个版本文件内容，但每个数据对象的文件名或内容，并不包含原始文件名。**
 
@@ -195,4 +204,8 @@ Array.from(document.querySelectorAll('[data-testid="group-name"]')).map(
 
 ### 树对象
 
-树对象和目录对应
+树对象和目录对应，它记录了文件名信息
+
+### 提交对象
+
+也叫 commit 对象，就是使用 git log 查看记录时，每个 commit 记录对应的数据存储对象
