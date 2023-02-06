@@ -1,24 +1,29 @@
 # 编辑器
 
-`VS Code` 还是 `WebStorm` ？，想用啥用啥，不纠结。
+我日常使用的编辑器基本就是 [VS Code](https://code.visualstudio.com/)，在本机上 Vim 都用的比较少，只在服务器上才用。
 
-用过 WebStorm
+## VS Code
 
-- 智能提示强，不需要太多的配置就能用的比较爽
-- 以前还有配置同步的便利，现在 VS Code 也有了
-- logo 很好看， VS Code 的 logo 丑。
+不纠结 VS Code 还是 WebStorm，都很好，都用过。VS Code 已经支持了 Github 登录与同步，支持超级简单的 snippets 配置，还免费，除了 Logo 有点难看，没啥不好的。
 
-现在用 VS Code
+我用的是啥？哈哈哈哈
 
-- 身边同事用的多
-- 足够好用
-- 同步也已经十分方便
-- snippets 配置很爽，WebStorm 的 Snippets 配置比较麻烦
+<MyImg src={require("./assets/vscode-logo.png").default} width="300px" />
 
-## 插件配置
+### 安装
 
-一些基础的插件配置是必要的，比如拼写检查插件，有的同学的代码用我的编辑器打开，一堆的拼写错误，我就无力吐槽。
+安装好 VSCode 后要做的事情
 
-## 终端
+- cmd + shift + p 呼出交互窗口，输入 code，选择在 PATH 中安装 Code 命令
+- 登录 Github 账号，设置同步，加载保存的配置
 
-iTerm2 + OH-My-ZSH
+### 配置
+
+使用 Github 登录账号同步。
+
+## App 开发
+
+- XCode
+- Android Studio
+- 微信开发者工具
+- 其他特定平台开发的工具，比如难用的 HBuilder

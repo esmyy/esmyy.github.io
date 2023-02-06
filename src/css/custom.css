@@ -125,3 +125,19 @@ body {
 .footer:not(.custom) {
   display: none;
 }
+
+a[target="_blank"]::after {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  content: "";
+  background-image: url("/img/link.png");
+  background-size: 12px;
+  margin-left: 4px;
+  background-repeat: no-repeat;
+  vertical-align: bottom;
+}
+
+a[class~="theme-edit-this-page"]::after {
+  display: none;
+}

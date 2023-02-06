@@ -54,23 +54,7 @@ Semantic HTML 使用 header、section、footer 等语义更明确的标签，cla
 在日常开发中，往往没有精细的语义化要求，
 但做一下有效梳理，有个大概的把握，是有意义的。
 
-### hgroup
+## 无障碍开发
 
-hgroup 适合用来组织一些具备标题和副标题的情况。
-
-### abbr
-
-abbr 缩写标签，对于表示缩写比较有用，能够与其他文本有效区分，语义明确，也便于统一应用样式。
-比如 <abbr title="Search Engine Optimize">SEO</abbr> 会带上浏览器的默认样式
-
-```html
-<abbr title="Search Engine Optimize">SEO</abbr>
-```
-
-```css title="Chrome user agent stylesheet"
-abbr[title] {
-  text-decoration: underline dotted;
-}
-```
-
-## 总结
+这方面接触应用的比较少，可参考
+[西瓜视频前端技术团队 - 聊聊前端无障碍实践](https://juejin.cn/post/7190341213126410298#heading-23)
