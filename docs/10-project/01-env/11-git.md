@@ -16,25 +16,26 @@
 其他都问题不大。
 
 :::info 😂😂😂
-还记得我实习那会儿，没有怎么看教程就上手干活，几个需求同时开发，没有提交就各种分支乱切，往事不堪回首 😂
+还记得我实习那会儿，没有提交就各种分支乱切，往事不堪回首 😂
 :::
 
-## 目录
+## 如何使用
 
-在初始化后，一个 git 仓库，git 相关的内容保存在 `.git` 目录中
+常用的命令熟悉之后正常使用即可，可以用命令行也可以用图形化工具。
 
-```bash
-➜  .git git:(main) ls
-COMMIT_EDITMSG HEAD           config         hooks          info           objects        refs
-FETCH_HEAD     ORIG_HEAD      description    index          logs           packed-refs
-➜  .git git:(main)
-```
+我个人比较喜欢用命令，平时会以命令行为主，也不用特别刻意去记，能够满足日常工作要求就可以
 
-可以当前 git 仓库的一些配置，不过一般不需要改这个文件就是了，毕竟麻烦。
+我平时主要用到的工具有
+
+- Oh-My-Zsh 的 git 插件
+- VSCode 的两个插件 Git Graph 和 GitLens
+- SourceTree
+
+git 也有很多很复杂的功能，用的场景少，我不是很有兴趣去研究。
 
 ## git config
 
-使用 git config 设置全局的或者具备的 user 信息
+使用 git config 设置全局的或者局部的 user 信息
 
 ```shell
 git config user.email iamesmyy@gmail.com
@@ -66,21 +67,11 @@ git config user.name esmyy -g
         merge = refs/heads/main
 ```
 
-## commit 规范
-
-## 常用命令
-
-相关图形化工具很多，不一定需要用命令，只是我个人比较喜欢用命令，平时会以命令行为主。
-像有些场景，比如需要查历史记录，git log 相关的参数特别多，我一般就只用一个 —— Oh-My-Zsh 提供的 `glog`，其他的我使用两个插件辅助
-
-- Git Grpph
-- GitLens
-
-其他的实在不记得，再快速检索一下 [Pro Git 2](https://git-scm.com/book/zh/v2/) 😂 我没有看 man 文件的习惯，感觉不够易读
+当前 git 仓库的一些都在这里，不过一般不需要改这个文件就是了。
 
 ## alias
 
-熟悉了基础的命令之后，我觉得使用 alias 来提升操作效率和体验很重要。
+熟悉基础的命令之后，我觉得使用 alias 来提升操作效率和体验很重要。
 
 比如在 .zshrc 中添加如下设置和获取用户信息的别名
 
@@ -91,7 +82,11 @@ alias name="git config user.name"
 alias email="git config user.email"
 ```
 
-我还使用了 [Oh-My-Zsh 的 git 插件](https://github.com/ohmyzsh/ohmyzsh/blob/master/plugins/git/git.plugin.zsh)，其中提供了丰富的 alias，能够极大地提高操作效率。
+我还使用了 [Oh-My-Zsh 的 git 插件](https://github.com/ohmyzsh/ohmyzsh/blob/master/plugins/git/git.plugin.zsh)，其中提供了丰富的 alias，能够提高操作效率。
+
+## commit 规范
+
+## git 钩子
 
 ## merge vs rebase
 
@@ -106,15 +101,11 @@ alias email="git config user.email"
 总结来说，merge 会保留所有提交的完整记录，每次 merge 会有一个
 从我的经验来说，当多人改动同一块地方时，如果采用 rebase 的方式，会产生比较多的冲突
 
-## .gitignore
-
-<https://github.com/github/gitignore>
-
 ## 批量拉取
 
 在新入职公司时，要拉取一些项目，可能项目很多，这个时候可以采用批量拉取的方式。当然，不要乱搞，遵守相关安全要求。
 
-```bash title="batchClone.ts"
+```bash title="batchClone.sh"
 #!/bin/bash
 
 # TODO: 替换为仓库列表，如果有子目录, 需写上(如foo/dotfiles)
@@ -151,10 +142,57 @@ Array.from(document.querySelectorAll('[data-testid="group-name"]')).map(
 集成到 cli 里面去
 :::
 
-## 原理
+## 实现原理
 
 <https://github.com/ohmyzsh/ohmyzsh/tree/master/plugins/git>
 
 ~/.oh-my-zsh/plugins/git/git.plugin.zsh
 
 <https://github.com/ohmyzsh/ohmyzsh/blob/master/plugins/git/git.plugin.zsh>
+
+<https://github.com/github/gitignore>
+
+### 目录
+
+在初始化后，一个 git 仓库，git 相关的内容保存在 `.git` 目录中
+
+```bash
+➜  .git git:(main) ls
+.
+├── HEAD
+├── config  # 配置
+├── description
+├── hooks   # 钩子
+├── info
+├── objects
+└── refs
+➜  .git git:(main)
+```
+
+### 数据对象
+
+文件的各个版本，保存在 objects 目录下，该目录下文件示意如下
+
+```shell
+.
+├── 1f
+│   └── 7a7a472abf3dd9643fd615f6da379c4acb3e3a
+├── 83
+│   └── baae61804e65cc73a7201a7252750c76066a30
+├── d6
+│   └── 70460b4b4aece5915caf5c68d12f560a9fe3e4
+├── info
+└── pack
+```
+
+文件的每个版本对应一个文件，这些文件称作数据对象。
+
+数据对象文件是 40 位的校验和，前两位作为文件夹名字，后 38 位作为文件名。
+
+**值得注意的是，这里虽然每个数据对象文件都对应着某个文件的某个版本文件内容，但每个数据对象的文件名或内容，并不包含原始文件名。**
+
+那么文件名保存在哪里呢？它保存在 **树对象** 中。
+
+### 树对象
+
+树对象和目录对应
