@@ -141,3 +141,7 @@ a[target="_blank"]::after {
 a[class~="theme-edit-this-page"]::after {
   display: none;
 }
+
+table {
+  margin-bottom: 20px;
+}

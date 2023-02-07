@@ -105,3 +105,5 @@ export type A0<T extends Noop> = Parameters<T>[0];
 export type A1<T extends Noop> = Parameters<T>[1];
 export type A2<T extends Noop> = Parameters<T>[2];
 ````
+
+## 对象属性

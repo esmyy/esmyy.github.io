@@ -1,0 +1,127 @@
+# 基础知识
+
+> CSS is a language for writing style sheets, and is designed to describe the rendering of structured documents (such as HTML and XML) on a variety of media. CSS is used to describe the presentation of a source document, and usually does not change the underlying semantics expressed by its document language.
+
+## 层叠
+
+## 盒模型
+
+```css
+box-sizing: border-box; // content-box
+```
+
+比较有趣的事情是，如今都用 `border-box`，但大部分元素的默认值是 `content-box`，所以在各网站上基本都可以看到这样一个 reset
+
+```css
+*,
+:after,
+:before {
+  box-sizing: border-box;
+}
+```
+
+<ThanksIe />
+
+## BFC
+
+Block Formatting Context，块级格式化上下文。
+
+简单来说，就是元素在特定条件下，形成一个独立的空间，在里面可以自治，独立地做自己的事情。
+
+知道 BFC 如何产生和使用容易，但我一直觉得 BFC 的理解有一点难度，它是个缝合怪
+
+- 它处理的场景是一些效果上比较特殊的场景
+- 它的实现方式奇奇怪怪的
+
+**实现方式**
+
+BFC 的实现方式是有点奇怪的，比如
+
+```css
+display: inline-block
+position: absolute
+position: fixed
+```
+
+我的理解，BFC 是为了解决存在的一些问题而出现的，它的实现方式对应了它最初归纳的**一些**应用场景。
+
+```js
+if (a || b || c) {
+  // 给你一个 BFC
+}
+```
+
+随着需求的发展，这样的拓展出了问题。
+现在使用的时候，我只是想要一个独立的空间，我可能不是 a,b,c，我也不可能去每新增一种场景去修改判断条件，需要一个通用的判断方式，这也就是后面推出的 `display: flow-root`
+
+**使用**
+
+老实说，当我使用 position，或者 inline-block 的时候，我并不会去想它是不是一个 BFC。
+只有像下面这样的特殊场景才会在乎“它是 BFC”这个事情
+
+- margin 折叠
+- 清除 float
+- 清除文字环绕效果，两栏布局
+
+当然，随着 flow-root 的使用，后面这个过程会自然一些，不用再为了得到一个 BFC 而使用那些有副作用的 CSS 属性。
+
+参考[Mozilla BFC](https://developer.mozilla.org/en-US/docs/Web/Guide/CSS/Block_formatting_context)
+:::tips 小结
+把 BFC 和 FFC(Flex Formatting Context), GFC(Grid Formatting Context)放到一起对比看待。
+不要再绕一圈从实现，使用去解释 BFC 是什么，从 flow-root 属性去看待 BFC，把它当做一个 CSS 属性，只是在现阶段还需要那些有副作用的实现而已。
+:::
+
+## 选择器
+
+在组件化开发中，尤其是 CSS Module 的使用，用到复杂选择器的时候并不像以前那样多了。
+
+不需要刻意去记选择器，当你需要选中元素设置样式的时候，CSS 都可以做到，不要做什么 hack 的实现就行。
+
+CSS 的选择器很强大，特定匹配方式记不清楚了再查一下就行，这样的时候也并不多。
+
+这个 [CSS 选择器](https://juejin.cn/post/6941206439624966152#heading-9) 里面列举的比较全 。
+
+## 权重和优先级
+
+什么选择器权重计算加 1000、100 这些，我觉得大可不必。大概知道顺序就可以了
+
+```
+!important > 行内 > id > class
+```
+
+这一类遵循良好的开发约定就可以避免的事情，我不想再去考虑。
+
+在不是优先解的方向上拼命，然后再来一句”可以我很努力了啊！“，感动了自己，大可不必。
+
+## 样式重置
+
+## 颜色
+
+CSS 中颜色有多种表示方式，最常用的是 关键字和 `rgba` 的形式。
+
+#### 关键字
+
+我表示比较神奇的是 CSS 2 新增的一个孤零零的 `orange`，竟然没有出现在 `1.0`，哈哈哈，好可怜。
+
+然后几个值得了解的点
+
+- transparent 其实是 rgba(0,0,0,0)
+- currentColor 是指当前元素 computed 之后的 color 值
+
+参考 [Named colors](https://developer.mozilla.org/en-US/docs/Web/CSS/named-color)
+
+## 单位
+
+### px
+
+### em & rem
+
+### vw & vh
+
+## 参考资料
+
+[csswg-drafts](https://github.com/w3c/csswg-drafts/issues)
+
+[1.5 万字 CSS 基础拾遗](https://juejin.cn/post/6941206439624966152#heading-6)
+
+[Mozilla BFC](https://developer.mozilla.org/en-US/docs/Web/Guide/CSS/Block_formatting_context)

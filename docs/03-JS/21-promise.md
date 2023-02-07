@@ -1,6 +1,6 @@
 # Promise
 
-Promise 通过 resolve 和 reject，利用底层完善的 EventLoop 机制，降低了 executor 和 cb 的耦合度，在这个基础上又很好地设计了 then 和 catch 等实例方法去统一回调函数的组织方式。Promise 化原来嵌套形式为了链调用形式，但本质上，onFulfilled 和 onError 函数等，仍是回调函数。
+Promise 通过 resolve 和 reject，利用底层的 EventLoop 机制，降低了 executor 和 cb 的耦合度，在这个基础上又很好地设计了 then 和 catch 等实例方法去统一回调函数的组织方式。Promise 化原来嵌套形式为了链调用形式，但本质上，onFulfilled 和 onError 函数等，仍是回调函数。
 
 ## 执行器函数
 
