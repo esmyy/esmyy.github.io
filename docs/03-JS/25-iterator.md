@@ -72,3 +72,5 @@ for (let i of counter1) {
 返回对象里面有 next 和 return 方法
 return 方法会在 break, continue, return 和 throw 退出循环时执行
 next 和 return 方法返回的对象称为 IteratorResult，具有 value 和 done 属性
+
+<!-- array.entries -->

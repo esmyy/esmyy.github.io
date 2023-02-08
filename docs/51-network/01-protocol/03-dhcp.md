@@ -8,7 +8,7 @@ Dynamic Host Configuration Protocol
 
 新设备加入网络时，基本流程如下
 
-![enter flow](assets/dhcp.jpg)
+![enter flow](../assets/dhcp.jpg)
 
 1. **DHCP Discover**: 新主机以 0.0.0.0 为 IP 地址，广播发送一个请求，这里关键是带上了 MAC 地址。
 1. **DHCP Offer**: DHCP 服务器收到消息，广播回复，这里会带上服务器的 MAC 和 IP。
@@ -23,7 +23,7 @@ nmap --script broadcast-dhcp-discover
 
 其中 DHCP Offer 响应如
 
-![DHCP offer](assets/dhcp-capture.jpg)
+![DHCP offer](../assets/dhcp-capture.jpg)
 
 从中可以看到 IP 的有效期是 2 hours。客户机在租期过去 50%，即 1 小时之后，会向 HTTP Server 请求续租，直接向为其提供 IP 的 DHCP Server 发送 DHCP Request，尝试使用原来的同一个 IP，这个时候客户机和服务器之间就不用广播了。
 

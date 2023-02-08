@@ -8,7 +8,7 @@ ICMP 全称 Internet Control Message Protocol，关键在于 Message，根据得
 
 使用 ping 发送 ICMP 报文的抓包结果如下
 
-![ICMP 抓包](assets/icmp.jpg) ICMP 报文中，需要稍微关注的字段(言下之意就是不需要记...记不住)的是 type 和 code
+![ICMP 抓包](../assets/icmp.jpg) ICMP 报文中，需要稍微关注的字段(言下之意就是不需要记...记不住)的是 type 和 code
 
 - type：消息类型，比如回显(echo) 请求，回显请求的应答，ping 请求是 8，ping 的响应是 0，不可达消息是 3。 消息含义的概括
 - code：概括消息含义 典型的是 type 为 3 的情况表示不可达，而 code 进一步表示了是什么不可达，是协议(code 2)，还是端口(code 3)。
@@ -46,7 +46,7 @@ ping baidu.com -m 1
 
 以上指定了在 IP 报文中设置 TTL 为 1，这样就会超时，结果如下
 
-![ICMP 差错报文](assets/icmp-error.jpg)
+![ICMP 差错报文](../assets/icmp-error.jpg)
 
 由于我设置的 TTL 为 1，所以由我房间里的路由器(168.0.0.1)返回了 ICMP 差错报文。从图中也可以看到，不用去记那些啥 type，code 呀，抓包工具会告诉我们具体信息的，靠记...哪成呀。
 
@@ -54,7 +54,7 @@ ping baidu.com -m 1
 
 traceroute 使用 UDP 协议，指定一个不可达端口，每次依次发送的报文 TTL 从 1 递增，链路上各个路由器由于 TTL 超时，返回一个 ICMP 消息通知源主机
 
-![traceroute](assets/traceroute.jpg)
+![traceroute](../assets/traceroute.jpg)
 
 ## 总结
 

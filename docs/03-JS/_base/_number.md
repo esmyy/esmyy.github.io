@@ -1,4 +1,4 @@
-# Number
+## Number
 
 对于数字，有必要了解 [IEEE 754](https://baike.baidu.com/item/IEEE%20754/3869922)，公式如下
 
@@ -17,7 +17,7 @@ V = (-1)<sup>s</sup>*2<sup>E</sup>*M
 E 部分各 bit 并非完全按照数值结果，计算时是有偏移的。
 根据指数域的不同，数值可以分为规格化、非规格化、特殊值，三种情况下计算方式是不一样的。
 
-## 特殊值
+### 特殊值
 
 NaN,Infinity,-Infinity 三个特殊值，均是指数域全 1
 
@@ -34,7 +34,7 @@ flowchart LR
 
 ```
 
-## 数值转换
+### 数值转换
 
 主要有 parseInt, parseFloat 和 Number 三种方式
 
@@ -66,7 +66,7 @@ parseInt(1 / 0, 19); // 18
 
 只要知道它只支持 10 进制就好了。parseFloat 和 Number.parseFloat 功能并没有什么不同。
 
-#### Number()
+### Number()
 
 有以下核心要点
 

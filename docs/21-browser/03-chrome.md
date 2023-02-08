@@ -1,3 +1,3 @@
-# 使用技巧
+# Chrome
 
-介绍 Chrome 使用的技巧
+介绍 Chrome 与开发者工具
