@@ -4,6 +4,7 @@ module.exports = {
     src: "img/favicon.png",
   },
   items: [
+    // { to: "/blog", label: "博客", position: "left" }, // 或 position: 'right'
     {
       position: "left",
       label: "手册",

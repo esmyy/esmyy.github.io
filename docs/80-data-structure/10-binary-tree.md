@@ -2,11 +2,30 @@
 
 二叉树，每个节点最多有两个子树的树结构，一般称作左子树，右子树。
 
-二叉树相关的常见场景
+```mermaid
+  flowchart TB
+  root([root]) --> left([left])
+  root --> right([right])
+```
 
-- 遍历
-- 查找
-- 构造
+从几个方面梳理相关知识
+
+```mermaid
+  flowchart LR
+  root[二叉树] --> A([遍历])
+  root --> B([查找])
+  root --> C([还原])
+  root --> D([存储])
+```
+
+## 几种特殊的二叉树
+
+| 名称           | 解释 |
+| -------------- | ---- |
+| 满二叉树       |      |
+| 完全二叉树     |      |
+| 二叉搜索树     |      |
+| 平衡二叉搜索树 |      |
 
 ## 定义
 
@@ -214,4 +233,6 @@ flat(result); // [ 1, 2, 3 ]
 
 ## 参考
 
-[leetcode 二叉树](https://leetcode.cn/leetbook/read/data-structure-binary-tree/xes3em/)
+[leetCode 二叉树](https://leetcode.cn/leetbook/read/data-structure-binary-tree/xes3em/)
+
+[ITCharge 算法通关手册](https://algo.itcharge.cn/07.Tree/01.Binary-Tree)

@@ -114,11 +114,13 @@ body {
   background-color: red;
 }
 
-.navbar {
+.blog-wrapper {
+}
+.blog-wrapper .navbar {
   background-color: transparent;
   display: none;
 }
-.navbar__item.navbar__link {
+.blog-wrapper .navbar__item.navbar__link {
   display: none;
 }
 

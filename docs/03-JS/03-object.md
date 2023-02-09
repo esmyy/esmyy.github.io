@@ -40,3 +40,7 @@ const descriptors = Object.getOwnPropertyDescriptors(person);
 ### 组合继承
 
 ### 寄生式组合继承
+
+## class
+
+js 中的类
