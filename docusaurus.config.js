@@ -67,7 +67,7 @@ const config = {
     ],
   ],
 
-  plugins: ["./postcss-tailwind-loader"],
+  plugins: ["./postcss-tailwind-loader", "./mindmap-plugin"],
 
   themeConfig:
     /** @type {import('@docusaurus/preset-classic').ThemeConfig} */
