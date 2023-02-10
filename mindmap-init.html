@@ -1,34 +1,58 @@
 <script type="module">
   import mindmap from "https://cdn.jsdelivr.net/npm/@mermaid-js/mermaid-mindmap@9/dist/mermaid-mindmap.esm.min.mjs";
   import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@9/dist/mermaid.esm.min.mjs";
-  function render() {
-    const root = document.querySelector("#__docusaurus");
-    const rendered = !!root.innerHTML;
+  const _historyWrap = function (type) {
+    const orig = history[type];
+    const e = new Event(type);
+    return function () {
+      const rv = orig.apply(this, arguments);
+      e.arguments = arguments;
+      window.dispatchEvent(e);
+      return rv;
+    };
+  };
 
-    if (rendered) {
-      const theme =
-        document.documentElement.getAttribute("data-theme") || "light";
-      const maps = document.querySelectorAll(
-        'div.mindmap[data-processed="true"]'
-      );
-      maps.forEach((v) => {
-        v.removeAttribute("data-processed");
-        v.innerHTML = v.getAttribute("data-mindmap-src");
-      });
-      mermaid.init(undefined, maps);
-    }
+  function checkRendered() {
+    const root = document.querySelector("#__docusaurus");
+    return !!root.innerHTML;
   }
 
-  mermaid.registerExternalDiagrams([mindmap]).then(() => {
+  function render() {
+    const theme =
+      document.documentElement.getAttribute("data-theme") || "light";
+    const maps = document.querySelectorAll(
+      'div.mindmap[data-processed="true"]'
+    );
+    maps.forEach((v) => {
+      v.removeAttribute("data-processed");
+      v.innerHTML = v.getAttribute("data-mindmap-src");
+    });
+    mermaid.init(undefined, maps);
+  }
+
+  let timer = null;
+  function listener() {
+    console.log("listener", timer);
+    if (timer) {
+      return;
+    }
+
     let checkTimes = 0;
-    const timer = setInterval(() => {
-      render();
-      if (checkTimes > 1000) {
+    timer = setInterval(() => {
+      const rendered = checkRendered();
+      if (rendered) {
+        render();
+      }
+
+      if (rendered || checkTimes > 1000) {
         clearInterval(timer);
+        timer = null;
       }
     }, 1000);
-  });
+  }
 
-  window.addEventListener("pushState", render);
-  window.addEventListener("replaceState", render);
+  mermaid.registerExternalDiagrams([mindmap]).then(listener);
+  history.pushState = _historyWrap("pushState");
+  history.replaceState = _historyWrap("replaceState");
+  window.addEventListener("pushState", listener);
 </script>

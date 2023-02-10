@@ -144,6 +144,7 @@ a[class~="theme-edit-this-page"]::after {
   display: none;
 }
 
-table {
+table,
+.mindmap {
   margin-bottom: 20px;
 }
