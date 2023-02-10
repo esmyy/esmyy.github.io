@@ -1,5 +1,6 @@
 const mermaid = require("mermaid");
 const path = require("path");
+const fs = require("fs");
 const append = function () {
   const sc = document.createElement("script");
   sc.setAttribute("type", "module");
@@ -19,20 +20,7 @@ module.exports = function (context, options) {
     injectHtmlTags({ content }) {
       return {
         postBodyTags: [
-          `<script type="module">
-            import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@9/dist/mermaid.esm.min.mjs";
-      import mindmap from "https://cdn.jsdelivr.net/npm/@mermaid-js/mermaid-mindmap@9/dist/mermaid-mindmap.esm.min.mjs";
-      mermaid.registerExternalDiagrams([mindmap]).then(() => {
-        const maps = document.querySelectorAll(
-          'div.mindmap[data-processed="true"]'
-        );
-        maps.forEach((v) => {
-          v.removeAttribute("data-processed");
-          v.innerHTML = v.getAttribute("data-mindmap-src");
-        });
-        mermaid.init(undefined, maps);
-      });
-          </script>`,
+          fs.readFileSync("./mindmap-init.html", { encoding: "utf-8" }),
         ],
       };
     },
