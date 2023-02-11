@@ -1,6 +1,6 @@
 # 引用类型
 
-Object 的实例是常说的”对象“，单独放到 [/docs/JS/object] 去解释，同时 Object 也是其他引用类型的基类，本文简单总结 Object 之外的其他引用类型。
+本文简单总结 Object 之外的其他引用类型。
 
 ## Date
 
@@ -88,7 +88,17 @@ new RegExp(prefix).exec(text);
 
 ### 字符串的正则方法
 
-ES6 之后，字符串的正则方法会在内部调用正则上面的对应方法
+ES6 之后，查看 RegExp.prototype 可以发现多了这些方法
+
+```js
+Symbol(Symbol.match);
+Symbol(Symbol.matchAll);
+Symbol(Symbol.replace);
+Symbol(Symbol.search);
+Symbol(Symbol.split);
+```
+
+当字符串的正则方法时会在内部调用 RegExp 上的对应方法，这样统一了所有正则方法实现的位置。
 
 ### 常用正则
 
@@ -100,7 +110,9 @@ ES6 之后，字符串的正则方法会在内部调用正则上面的对应方�
 | ---------------------------------------------------- |
 | VSCode RegExplain 插件，图形化显示正则               |
 | [regexper.com 图形化显示正则](https://regexper.com/) |
-| [在线快速编辑测试正则](https://regex101.com/)        |
+| [在线快速编辑测试正则](https://regex-vis.com/)       |
+
+<!--  -->
 
 ## Object
 

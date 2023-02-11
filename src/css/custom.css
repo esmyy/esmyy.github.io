@@ -145,6 +145,14 @@ a[class~="theme-edit-this-page"]::after {
 }
 
 table,
-.mindmap {
+.mindmap,
+.docusaurus-mermaid-containe {
   margin-bottom: 20px;
+}
+.theme-code-block {
+  margin-top: 12px;
+}
+
+p code {
+  margin: 0 4px;
 }
