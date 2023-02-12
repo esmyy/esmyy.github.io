@@ -185,7 +185,7 @@ arr.toString(); // esmyy
 
 ## toNumber
 
-转换为 Number 类型的场景，主要是从 String 转换为 Number，有 parseInt、parseFloat、Number 和 `+` 操作符等方式。
+转换为 Number 类型的场景，大多数的场景是从 String 转换为 Number，主要有 parseInt、parseFloat、Number 3 种方式。
 
 ```mermaid
   flowchart LR
@@ -298,9 +298,18 @@ parseInt("1e2"); // 100 识别指数形式
 Number.parseInt 和 Number.parseFloat 是两个 parse 函数的模块化版本，处理过程是一样的，这也是 JS 进步的体现。
 :::
 
+### Number()
+
+相对 Number() 而言，parseXxx 指针对于字符串而言的，判断结果是 Number 还是 NaN 的逻辑更容易理解和记忆。
+而 `Number()` 就比较零散，没有能够层层推进的判断逻辑，更多是靠列举，参考[Number coercion](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number#number_coercion)。
+
+:::tips
+`+`符合转换和 Number()的处理过程一样。
+:::
+
 ## 特殊值检测
 
-## 包装对象
+## 装箱过程
 
 原始类型中，有些类型比较特殊
 
@@ -315,7 +324,7 @@ Number.parseInt 和 Number.parseFloat 是两个 parse 函数的模块化版本�
 />
 
 这几个类型各自对应有一个同名函数，作为普通函数调用，返回一个原始值，这与直接使用字面量的方式定义一致。
-作为构造函数调用时返回一个对象，这个对象称作包装对象，这个过程称做装箱。
+作为构造函数调用时返回一个对象，这个对象称作包装对象。
 
 ```js
 const str1 = String("esmyy");
@@ -326,7 +335,7 @@ typeof str2; // object
 ```
 
 包装对象的“包装”是针对于原始类型的，就像是给原始类型套上了属性，方法，变成了一个对象。当然，我们一般不会，也不应该调用原始类型的构造函数,
-我们说到“包装对象”，更多是在解释访问原始类型变量的属性或方法时发生的”包装“过程
+我们说到“包装对象”，更多是在解释访问原始类型变量的属性或方法时发生的”包装“过程，这个过程称做装箱。
 
 > When properties are accessed on primitives, JavaScript auto-boxes the value into a wrapper object and accesses the property on that object instead.
 
@@ -353,9 +362,9 @@ str1.includes("myy"); // true
   hint --default --> B2
 ```
 
-默认情况下，根据 hint 的不同，会按照以上示意的顺序尝试进行调用
+默认情况下，根据 hint 的不同，会按照以上示意的顺序尝试进行调用，需要注意的是，
 
-- 如果得到一个原始值，则结束调用路径，返回
+- 如果得到一个原始值(注意，并不一定和 hint 类型一致)，则结束调用路径，返回
 
   ```js
   const obj = {
@@ -434,8 +443,9 @@ const obj = {
 定义了自定义的转换方法后，不走默认逻辑，就跟`valueOf`和`toString`没啥关系了，但是同样的，如果返回的值不是一个 primitive，会报 TypeError。
 
 :::tip 小结
-拆箱转换过程中，hint 只影响了调用顺序，与实际返回值的类型无关。
-如果要判断拆箱转换的结果，关键是要确定，在不同的情况下 hint 是什么。
+拆箱转换过程中，hint 只影响了调用顺序，与实际返回值的类型无关。拆箱转换只是得到一个原始值，如果得到的值与 hint 不一致，是拆箱转换之后再类型转换，所以有时候也称做**先拆箱后转换**。
+
+TODO： 要判断拆箱转换的结果，先要确定在不同的情况下 hint 是什么，这个如何确定
 参考 [MDN Symbol.toPrimitive](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Symbol/toPrimitive)
 [ECMA ToPrimitive](https://tc39.es/ecma262/#sec-toprimitive)
 :::
@@ -443,5 +453,3 @@ const obj = {
 <!-- 参考[JSON](#JSON) -->
 
 <!-- ## BigInt -->
-
-<https://tc39.es/ecma262/#sec-toprimitive>

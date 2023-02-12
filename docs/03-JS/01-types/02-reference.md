@@ -2,11 +2,7 @@
 
 本文简单总结 Object 之外的其他引用类型。
 
-## Date
-
 ## RegExp
-
-### 创建
 
 正则的创建有两种方式
 
@@ -35,40 +31,31 @@ const regex = new RegExp(/cat/, "i");
 const regex = new RegExp(/cat/i);
 ```
 
-### 使用
+### 正则方法
 
 正则表达式用于字符串，涉及到的常用方法，一部分属于正则实例，一部分属于字符串包装对象。
 
 ```mermaid
-flowchart TB
+flowchart LR
   A[常用方法] --> RegExp[正则方法]
-  RegExp --最常用--> exec[reg.exec]
-  RegExp --最常用--> test[reg.test]
-  A --> String[字符串的正则方法]
-  String --最常用--> match[str.match]
-  String --最常用--> replace[str.replace]
-  String --> search[str.search]
-  String --> split[str.split]
-  String --新增--> matchAll[str.matchAll]
-  style exec fill:red
-  style test fill:red
-  style match fill:red
-  style replace fill:red
+  RegExp --最常用--> exec(reg.exec)
+  RegExp --最常用--> test(reg.test)
+  A --> String(字符串的正则方法)
+  String --最常用--> match(str.match)
+  String --最常用--> replace(str.replace)
+  String --> search(str.search)
+  String --> split(str.split)
+  String --新增--> matchAll(str.matchAll)
+  style exec fill:#faf
+  style test fill:#faf
+  style match fill:#faf
+  style replace fill:#faf
   style matchAll fill:grey
 ```
 
-总共 `2 + 5 = 7` 个方法，最常用的是前面 4 个方式，`matchAll`。
+总共 `2 + 5 = 7` 个方法，最常用的是前面 4 个方式，`matchAll` 还比较新，兼容性有待增强。
 
-### 正则实例方法
-
-基本上只用 [test](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/RegExp/test) 和 [exec](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/RegExp/exec)，然后其他常用的地方就是字符串的一些方法调用，比如 replace, match。
-
-使用正则的方法，基本上分成两类
-
-- 关注匹配具体内容：reg.exex, str.match
-- 不关注匹配的具体内容：reg.test, str.replace
-
-exec 有几个特别的地方
+正则实例方法基本上只用 [test](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/RegExp/test) 和 [exec](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/RegExp/exec)，exec 有几个特别的地方
 
 - 不设置 `g` 标记的时候，只返回第一个匹配的信息，设置了 `g` 之后，依次向后匹配
 - 返回值虽然是一个数组，但是添加了 input 属性，每次匹配的 `index`, `lastIndex`(设置了`g`之后才会返回)
@@ -86,9 +73,7 @@ new RegExp(prefix).exec(text);
   <div>完整的原始字符串</div>
 </details>
 
-### 字符串的正则方法
-
-ES6 之后，查看 RegExp.prototype 可以发现多了这些方法
+ES6 之后，RegExp.prototype 新增了一些内部方法
 
 ```js
 Symbol(Symbol.match);
@@ -98,9 +83,31 @@ Symbol(Symbol.search);
 Symbol(Symbol.split);
 ```
 
-当字符串的正则方法时会在内部调用 RegExp 上的对应方法，这样统一了所有正则方法实现的位置。
+当调用字符串的正则方法时，会调用正则实例上调的对应方法，这样统一了 RegExp, String 上正则相关方法实现
 
-### 常用正则
+```js
+const reg = /cat/;
+reg[Symbol.split] = function (str) {
+  return "hahaha " + str;
+};
+
+const str = "esmyy";
+str.split(reg); // 'hahaha wow'
+```
+
+也可以直接调用正则上的方法来替代字符串的正则方法。
+
+```js
+const reg = /cat/;
+const str = "cat is cute";
+
+str.replace(reg, "dog");
+reg[Symbol.replace](str, "dog");
+```
+
+:::tip 思考
+我觉得这个正则方法统一实现的改变，是很有意思的。虽然从调用来说，部分方法仍旧是在 String 上，但只是一个引用了，RegExp 模块化的特点更鲜明了。
+:::
 
 ### 工具推荐
 
@@ -112,29 +119,11 @@ Symbol(Symbol.split);
 | [regexper.com 图形化显示正则](https://regexper.com/) |
 | [在线快速编辑测试正则](https://regex-vis.com/)       |
 
-<!--  -->
-
-## Object
-
 ## Array
 
-[Array](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/reverse) 是 Object 之外最常用的引用类型，具有非常丰富的操作方法，很多时候需要组合着来使用。
+[Array](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array) 是 Object 之外最常用的引用类型，具有非常丰富的操作方法，很多时候需要组合着来使用。
 
-```mermaid
-flowchart TB
-  A[数组操作] --> B[创建]
-  A --> C[增加]
-  A --> D[删除]
-  A --> E[修改]
-  A --> F[查找]
-  A --> H[迭代]
-  A --> G[排序]
-  A --> I[过滤]
-```
-
-### 创建
-
-一般都使用字面量的方式创建，主要关注两个稍微特别的场景
+一般都使用字面量的方式创建，两个常用的特别的场景
 
 ```mermaid
 flowchart LR
@@ -142,7 +131,7 @@ flowchart LR
   A --> C[类数组转换]
 ```
 
-这俩也是开发中很常见的场景，示例如下
+示例如下
 
 ```js
 // 特定长度数组
@@ -154,7 +143,7 @@ const arr2 = Array.from(set); // [1,2]
 const arr3 = [...set]; // [1,2]
 ```
 
-### 注意事项
+有两个注意事项
 
 ```js
 // 末尾逗号之后的元素被忽略
@@ -164,29 +153,14 @@ const arr2 = [1, ,]; // arr2.length is 2
 const arr3 = [, , ,];
 ```
 
-### 备忘
-
-- reduce 第二个参数没有使用过，一些场景可以用
-- reduceRight, copyWithin，entries 可以根据情况提高使用率
-- flat 和 flatMap 可以应用在一些试用项目
+:::note
+reduce 第二个参数没有使用过，一些场景可以用。
+reduceRight, copyWithin，entries 可以根据情况提高使用率。
+flat 和 flatMap 可以先了解。
+:::
 
 ## Map
 
 ## Set
-
-## 包装类型
-
-Boolean, String 和 Number 这几种类型除了
-
-- 各有一个对应的生成函数，构造函数调用返回一个引用类型
--
-
-包装类型是指
-
-:::caution
-所谓的后台，是什么？编译器？解析器？
-:::
-
-## 拆箱转换
 
 ## Error
