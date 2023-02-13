@@ -7,7 +7,7 @@ module.exports = {
     // { to: "/blog", label: "博客", position: "left" }, // 或 position: 'right'
     {
       position: "left",
-      label: "手册",
+      label: "知识手册",
       to: "/docs",
     },
     {

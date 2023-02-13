@@ -1,25 +1,27 @@
 # Promise
 
-Promise 通过 resolve 和 reject，利用底层的 EventLoop 机制，降低了 executor 和 cb 的耦合度，在这个基础上又很好地设计了 then 和 catch 等实例方法去统一回调函数的组织方式。Promise 化原来嵌套形式为了链调用形式，但本质上，onFulfilled 和 onError 函数等，仍是回调函数。
+<!-- Promise 通过 resolve 和 reject，利用底层的 EventLoop 机制，降低了 executor 和 cb 的耦合度，在这个基础上设计了 then 和 catch 等实例方法，由嵌套回调改为链调用形式，但本质上，onFulfilled 和 onError 函数等，仍是回调函数。 -->
 
 ## 执行器函数
 
-```js
 Promise 的基本调用格式如下
 
-new Promise((resolve, reject) => {
-  // ...
-}).then((data) => {
-  // ...
-}).catch((err) => {
-  // ...
-})
+```js
+new Promise(executor)
+  .then((data) => {
+    // ...
+  })
+  .catch((e) => {
+    // ...
+  });
 ```
 
-想特别说明的是 执行器函数 这个称呼
+想特别说明的是 **executor** 这个执行器函数。
 
 ```js
-new Promise(executor);
+(resolve, reject) => {
+  // ...
+};
 ```
 
 通过 “执行器函数” 这个名称，理解它的同步性变得自然多了。与回调做对比如下
@@ -350,3 +352,11 @@ timer2;
 ## 总结
 
 要理解和掌握 Promise，对 EventLoop 的了解是必不可少的，需要在理解 EventLoop 的基础上，了解 Promise 的执行器，静态方法和实例方法。然后了解 Promise 的拓展库，polyfill 库，兼容性等。
+
+<!--
+  并发限制
+  race的场景
+
+  promise究竟要怎样去理解，到怎样的程度才算是理解透彻和掌握？
+  理解的基础上，手写 Promise 并没有那么难
+ -->

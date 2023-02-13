@@ -162,3 +162,7 @@ p code {
   margin-bottom: 10px;
   text-decoration: underline;
 }
+
+p {
+  line-height: 24px;
+}
