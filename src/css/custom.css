@@ -156,3 +156,9 @@ table,
 p code {
   margin: 0 4px;
 }
+
+.markdown > h5 {
+  margin-top: 10px;
+  margin-bottom: 10px;
+  text-decoration: underline;
+}
