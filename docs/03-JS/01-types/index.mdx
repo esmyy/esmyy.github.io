@@ -309,6 +309,21 @@ Number.parseInt 和 Number.parseFloat 是两个 parse 函数的模块化版本�
 
 ## 特殊值检测
 
+```js
+// null
+val === null;
+
+// undefined
+val === void 0;
+val === undefined;
+typeof val === "undefined";
+
+// isNaN
+val !== val;
+isNaN(val) && typeof val === "number";
+Number.isNaN(val);
+```
+
 ## 装箱过程
 
 原始类型中，有些类型比较特殊

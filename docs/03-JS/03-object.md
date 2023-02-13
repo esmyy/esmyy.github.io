@@ -5,8 +5,8 @@ JS 中对象是一组属性的无序集合，可以把对象想象成一张散�
 对于对象的创建过程，经典的介绍过程就是《JavaScript 高级程序设计》里面介绍的从工厂模式开始，到构造函数模式、原型模式...组合寄生式构造函数模式。
 
 :::note 体会
-以前我会觉得《JavaScript 高级程序设计》经典的介绍与说明过程，逻辑清晰，层层递进，让我大受震撼，对于理解有很大的帮助。如今我还是觉得很好很好，但是却不再奉为圭臬。
-走得更远了一些，改变了一些我看待历史的方式，温故知新，这是我的发展。
+以前我会觉得《JavaScript 高级程序设计》经典的介绍与说明过程，逻辑清晰，层层递进，让我大受震撼，对于理解有很大的帮助。
+如今我还是觉得很好很好，但是却不再奉为圭臬。走得远一些，直接看到了后半段的结果，中间的过程有时候反而像是为了解释而制造了过于复杂的过程。
 :::
 
 <!-- 逐步升级需求，随着需求升级之后，当前实现方式问题凸显，不能满足新的需要，然后新的实现方式应运而生。 -->
@@ -37,17 +37,60 @@ function getSubmitParams(type, form) {
 }
 ```
 
-工厂模式的问题？？
-
 以前深以为然的一段描述
 
 **工厂模式虽然可以解决创建多个类似对象的问题，但没有解决对象标识问题（即新创建的对象是什么类型）。**
 
-现在我觉得，知其所以然之后，做实践的总结，工厂模式不会用到需要原型，或者是通过构造函数标识类型的场景，问题就没有了，绕过去了。
+这是需求升级了，却仍想着用工厂模式才有的问题，已经不再是工厂模式适用的场景了。
 
 ## 构造函数
 
 构造函数可以称为构造对象的函数，目的就是创建对象。
+
+从调用上来说，使用 new 调用的函数就是构造函，当然，从实践上来说，没有充分利用构造函数的特性，却又作为构造函数去使用，不是一个好的实践。
+
+### 构造函数实例化过程
+
+new 实例化有以下执行过程
+
+1. 创建一个新对象
+2. 设置对象的 [[Prototype]] 指向构造函数的 prototype
+3. this 指向新对象
+4. 执行构造距离逻辑，给新对象添加属性
+5. 如果构造函数返回非空对象，则返回该对象；否则，返回刚创建的新对象。
+
+根据这个过程，new 实例化，模拟实现如下
+
+```js
+function objectFactory(Constructor, ...args) {
+  // 1. 创建一个对象
+  // 2. 设置 [[prototype]]
+  const obj = Object.create(Constructor.prototype);
+  // const obj = {};
+  // Object.setPrototypeOf(obj, Constructor.prototype);
+
+  // 3. this 指向 obj
+  // 4. 执行属性方法添加过程
+  const ret = Constructor.apply(obj, args);
+
+  // 5. 返回对象
+  return typeof ret === "object" && ret !== null ? ret : obj;
+}
+```
+
+<details>
+  <summary>如果构造函数有return会怎样？如果return是null，是undefined，是number呢？</summary>
+  <div>如果构造函数返回非空对象，则返回该对象；否则，返回刚创建的新对象。这里非空对象，可以理解为非原始类型。也就是说上面说的这些原始值的return都会被忽略。</div>
+</details>
+
+<!-- 构造函数实例化，既包含了 new
+
+- 使用 new 来调用
+- 原型 prototype -->
+
+### 构造函数模式
+
+所谓的构造函数模式也可以称为 **构造函数内部赋值的模式**，特点是 **属性和方法都在构造函数内部赋值**。
 
 ```js
 function Person(name, age) {
@@ -61,80 +104,23 @@ function Person(name, age) {
 const p1 = new Person("esmyy", 666);
 ```
 
-从调用上来说，使用 new 调用的函数就是构造函数。构造函数实例化的过程，用工厂函数模拟实现如下
+当我们拎出来一个”构造函数模式“单独去介绍时，侧重的是 new 调用构造函数时的一部分特点
 
-```js
-function createPerson(name, age) {
-  // 1. 创建一个对象
-  const obj = {};
-  // 2. 设置 [[prototype]]
-  Object.setPrototypeOf(obj, Person.prototype);
-
-  // 3. this 指向 obj
-
-  // 4. 执行属性方法添加过程
-  obj.name = name;
-  obj.age = age;
-  obj.sayName = function () {
-    console.log(obj.name);
-  };
-
-  // 5. 返回对象
-  return obj;
-}
-```
-
-当我们说构造函数模式时，其实把下面这些特点综合起来，归纳为一种模式
-
-- 它的所有属性，方法都在函数内部赋值
-- 没有显式地创建对象，属性和方法赋值给 this
+- 没有显式地创建对象
+- 属性和方法赋值给 this
 - 没有 return
 
-我觉得在理解上，需要区别的一点是，**构造函数模式与构造函数实例化不是一回事**。
-发展到今天，
+特别是 **属性和方法赋值给 this** 这个特点，展示了这个模式下方法重复定义的问题，这其实是有意和 prototype 作了切割，是为了更好地和原型模式作对比。
 
-构造函数实例化的过程，就是把工厂模式的一些操作在内部做了处理，用工厂函数模拟实现如下
+:::tip 总结来说
+构造函数模式不等于与构造函数实例化过程，它是 “用了 new 实例化，又没完全用的这种使用方式”的一个归纳。
+:::
 
-```js
-function createPerson(name, age) {
-  const obj = {};
-  obj.name = name;
-  obj.age = age;
-  obj.sayName = function () {
-    console.log(obj.name);
-  };
+### 原型模式
 
-  Object.setPrototypeOf(obj, Person.prototype);
-  return obj;
-}
-```
+构造函数的问题在于属性和方法的重复定义，为了实现复用，需要将可复用的属性，方法挂到构造函数相关的**某个地方**，这个地方就是所谓的 prototype，也叫原型。
 
-- 创建对象，用 this 引用指向这个对象
-- 建立 `[[prototype]]` 的关联
-- 设置新对象的 constructor 指向构造函数
-
-虽说从调用上来说，使用 new 调用的函数就是构造函数，但从实践来说，我觉得好的实践，要尊重其特性，其优点。
-没有充分利用构造函数的特性，缺又作为构造函数去使用，不是一个好的实践。
-我的实践原则如下
-
-- 定义属性时使用 this
-- 不 return
-
-<details>
-  <summary>如果构造函数有return会怎样？如果return是null，是undefined，是number呢？</summary>
-  <div>如果构造函数返回非空对象，则返回该对象；否则，返回刚创建的新对象。这里非空对象，可以理解为非原始类型。也就是说上面说的这些原始值的return都会被忽略。</div>
-</details>
-
-<details>
-  <summary>构造函数模式的特点</summary>
-  <div>如果构造函数返回非空对象，则返回该对象；否则，返回刚创建的新对象。这里非空对象，可以理解为非原始类型。也就是说上面说的这些原始值的return都会被忽略。</div>
-</details>
-
-## 原型模式
-
-构造函数的问题在于属性和方法的重复定义。方法是应当是所有实例共用的，只需要定义一次就好，这需要每个实例的同名方法引用同一个函数，为了保持关联关系，这个函数需要挂到构造函数相关的**某个地方**。
-
-这个地方就是所谓的 prototype，也叫原型。使用 prototype 的方式去共享属性的方法，这种生成对象的方式叫做原型模式，也就是使用 prototype 的创建模式
+使用 prototype 共享属性的方法，这种生成对象的方式叫做原型模式。
 
 ```js
 function Person(name, age, job) {
@@ -206,11 +192,17 @@ SubType.prototype = new SuperType(superOptions);
   </div>
 </details>
 
+:::info
+原型链的特点
+
+当链上有引用值的时候，共享容易出现问题。
+
+子类型在实例化时不能给父类型的构造函数传参。
+:::
+
 ### 经典继承
 
-经典继承也叫做盗用构造函数。老实说，经典继承和盗用构造函数，两名字都没好到哪里去，对于理解没什么帮助。
-
-核心表述
+经典继承也叫做盗用构造函数，核心结构描述
 
 ```js
 function SuperType(options) {
@@ -224,14 +216,34 @@ function SubType(options) {
   });
 }
 
-const instance1 = new SubType({ name: "esmyy", age: 666 });
+const instance1 = new SubType({ name: "kunkun", time: "两年半" });
 ```
 
-## 如果 SuperType 实例上有引用类型，那么引用类型是所有 SubType 的实例共用的，可能存在两个问题
+这个使用方式，尝试解决的是原型链的两个问题，当然，又带来新的问题，没有用上 SuperType 的原型。
 
-如果期望
+老实说，经典继承和盗用构造函数，两名字都没好到哪里去，对于理解没什么太大帮助。
 
 ### 组合继承
+
+组合继承就是”经典继承“和”原型链”一起嘛，既调用 SuperType.call(this, args )来进行子类实例化，也使用 SupType.prototype = new SuperType() 设置原型进行共享。
+
+```js
+function SuperType(options) {
+  this.name = options.name;
+}
+
+function SubType(options) {
+  this.text = `你好，练习时长达到 ${options.time} 的练习生 ${options.name}，请问你会打篮球吗？`;
+  SuperType.call(this, {
+    name: options.name,
+  });
+}
+
+const instance1 = new SubType({ name: "kunkun", time: "两年半" });
+SupType.prototype = new SuperType();
+```
+
+好吧，显然都不用说，这样用明显有问题嘛，SuperType.call 用了自定义参数，而
 
 ### 寄生式组合继承
 
@@ -242,3 +254,5 @@ class 是前面所说的构造函数，各种原型，继承的集大成者。�
 :::tip
 从工厂模式到 class，中间说的各种”问题“，其实都是需求升级之后，原来的实现方式不满足而已，并不是各种方式就是有问题不能使用，不同的实现方式都有各自的优点，可以用于不同的场景。
 :::
+
+<!-- 深拷贝与浅拷贝 -->
