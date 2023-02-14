@@ -11,18 +11,13 @@ module.exports = {
       to: "/docs",
     },
     {
-      to: "/docs/frameworks/react/overview",
-      label: "React",
+      to: "/docs/frameworks",
+      label: "前端框架",
       position: "left",
     },
     {
-      to: "/docs/frameworks/vue3/overview",
-      label: "Vue 3",
-      position: "left",
-    },
-    {
-      to: "/docs/frameworks/vue2/overview",
-      label: "Vue 2",
+      to: "/docs/qa",
+      label: "Q & A",
       position: "left",
     },
     {
