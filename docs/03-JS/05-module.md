@@ -16,7 +16,6 @@
 ## CommonJS
 
 和 ES6 的 `import`, `export` 不一样，module 和 require 并不是 ECMAScript 规范里面的关键字，这俩就是对象。
-
 对象无非就是方法，属性这些内容，明确 module 和 require 的对象的本质之后，理解 CommonJS 就容易多了。
 
 ### Module

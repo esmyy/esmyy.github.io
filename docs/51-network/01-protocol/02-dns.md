@@ -4,7 +4,22 @@
 
 在对外查找之前，本机的查找过程是
 
-浏览器缓存 > 系统缓存 -> hosts
+```mermaid
+  flowchart LR
+  A(浏览器缓存) --> B(系统缓存) --> hosts(hosts)
+```
+
+### 浏览器缓存
+
+以 Chrome 为例，在之前的版本，DNS 相关的内容可以在以下页面查看
+
+```text
+chrome://net-internals/#dns
+```
+
+新版的 Chrome 已经移除了具体的缓存展示，只有 lookup 和 clear 功能。现在需要在 [chrome://net-export](chrome://net-export) 导出缓存文件，然后使用 [netlog_viewer](https://netlog-viewer.appspot.com/) 查看。
+
+> The net-internals events viewer and related functionality has been removed. Please use [chrome://net-export](chrome://net-export) to save netlogs and the external [netlog_viewer](https://netlog-viewer.appspot.com/) to view them.
 
 ## DNS
 
@@ -20,4 +35,14 @@ CDN 一般会在权威 DNS 服务器中设置 CNAME，当访问某个域名，�
 
 ![DNS](../assets/cdn-dns.jpg)
 
-chrome://net-internals/#dns
+## 缓存刷新
+
+## 缓存设置
+
+ping
+
+## 如何使用
+
+<!-- https://help.aliyun.com/document_detail/39799.html -->
+
+## 缓存查看

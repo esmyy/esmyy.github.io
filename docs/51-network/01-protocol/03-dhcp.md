@@ -1,8 +1,6 @@
 # DHCP
 
-Dynamic Host Configuration Protocol
-
-动态主机协议，用以在局域网中设备接入分配 IP，基本的原理是接入设备和 DHCP Server 通过广播进行通信协商，协商好之后通过广播广而告之。
+动态主机协议(Dynamic Host Configuration Protocol)，用以在局域网中设备接入分配 IP，基本的原理是接入设备和 DHCP Server 通过广播进行通信协商，协商好之后通过广播广而告之。
 
 ## 接入流程
 
@@ -26,5 +24,3 @@ nmap --script broadcast-dhcp-discover
 ![DHCP offer](../assets/dhcp-capture.jpg)
 
 从中可以看到 IP 的有效期是 2 hours。客户机在租期过去 50%，即 1 小时之后，会向 HTTP Server 请求续租，直接向为其提供 IP 的 DHCP Server 发送 DHCP Request，尝试使用原来的同一个 IP，这个时候客户机和服务器之间就不用广播了。
-
-了解基本过程，知道连接 wifi 的时候大概是个什么过程即可。这个过程，还蛮有意思的，跟求职的过程类似。
