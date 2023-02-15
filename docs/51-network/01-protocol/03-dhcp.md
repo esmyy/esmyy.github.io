@@ -6,12 +6,43 @@
 
 新设备加入网络时，基本流程如下
 
-![enter flow](../assets/dhcp.jpg)
+```mermaid
+  sequenceDiagram
+  participant host as 新设备
+  participant dhcpServer as DHCP服务器
+  host ->> dhcpServer: 1. Discover
+  dhcpServer ->> host: 2. Offer
+  host ->> dhcpServer: 3. Request
+  dhcpServer ->> host: 4. ACK
+```
 
-1. **DHCP Discover**: 新主机以 0.0.0.0 为 IP 地址，广播发送一个请求，这里关键是带上了 MAC 地址。
-1. **DHCP Offer**: DHCP 服务器收到消息，广播回复，这里会带上服务器的 MAC 和 IP。
-1. **DHCP Request**:新主机收到广播，发现是给自己分配 IP 的消息，很愉快地接收了，给 DHCP 服务器回复说接受 Offer 了。注意这一步仍是广播的，因为 DHCP Server 也并不一定是唯一的，需要告诉其他 Server，它已经接受某个公司提供的 Offer 了。
-1. **DHCP ACK**:服务器收到确认，招到一个满意的新员工，它也很高兴。正式登记，再次大喊一声，广而告之(虽然其他人不怎么关注就是了)，欢迎新主机加入
+这个过程跟求职有些类似。
+
+### Discover
+
+新主机以 0.0.0.0 为 IP 地址，广播发送一个请求，这里关键是带上了 MAC 地址。
+
+### Offer
+
+DHCP 服务器返回一个 IP
+
+### Request
+
+新主机收到广播，发现是给自己分配 IP 的消息，很愉快地接收了，给 DHCP 服务器回复说接受 Offer 了。注意这一步仍是广播的，因为 DHCP Server 也并不一定是唯一的，需要告诉其他 Server，它已经接受某个公司提供的 Offer 了。
+
+### ACK
+
+服务器收到确认，招到一个满意的新员工，它也很高兴，欢迎新主机加入
+
+### 网络重连
+
+当本机网络断开，重新连接到网络，由于本机内存中已经有 IP 了，会跳过 Discover 和 Offer，再次广播 Request 请求。
+
+![网络重连时的DHCP](../assets/dhcp-reconnect.jpg)
+
+### 固定 IP
+
+日常开发中，有时候为了开发方便，王
 
 可以通过 nmap 模拟一下
 
@@ -24,3 +55,7 @@ nmap --script broadcast-dhcp-discover
 ![DHCP offer](../assets/dhcp-capture.jpg)
 
 从中可以看到 IP 的有效期是 2 hours。客户机在租期过去 50%，即 1 小时之后，会向 HTTP Server 请求续租，直接向为其提供 IP 的 DHCP Server 发送 DHCP Request，尝试使用原来的同一个 IP，这个时候客户机和服务器之间就不用广播了。
+
+<!-- https://learn.microsoft.com/en-us/windows-server/troubleshoot/troubleshoot-problems-on-dhcp-client -->
+
+<!-- 有MAC地址为什么还需要IP地址，从理论上，只有一个地址，能够替代吗 -->

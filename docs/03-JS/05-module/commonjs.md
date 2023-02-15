@@ -1,34 +1,91 @@
-# 模块化
+# CommonJS
 
-| 名称       | 适用侧        | 关键字                  |
-| ---------- | ------------- | ----------------------- |
-| CommonJS   | Server(Node)  | module.exports, require |
-| AMD        | Client        | define/require          |
-| UMD        | Server/Client | -                       |
-| ES6 Module | Server/Client | export/import           |
+[CommonJS](https://nodejs.org/docs/latest-v16.x/api/modules.html) 规范主要用于服务器端模块化代码组织
 
-<!-- TODO Server 端的 ES6 Module -->
+| 名称     | 适用侧       | 关键属性                |
+| -------- | ------------ | ----------------------- |
+| CommonJS | Server(Node) | module.exports, require |
 
-还有 CMD 什么的，现在主要是了解 CommonJS, UMD, ES Module 就好了。
-
-在早期，使用 namespace，使用 IIFE 等来保存局部的变量，如今 ES 模块化的方案，让局部逻辑更加独立，代码结构更加清晰，实现更加统一和方便。同时结合 Webpack 等的 Tree Shaking 能力，让我们能够更灵活地组织输出内容。
-
-现在主要是 CommonJS 和 ES6 Module 两种，这两种类型都在 node 源码里有相应的实现。
-
-以下说明基于 Node.js v16.19.0
-
-## CommonJS
-
-module 和 require 并不是 ECMAScript 规范里面的关键字、根据使用方式可知 module 是一个对象，而 require 是一个函数
+module 和 require 并不是 ECMAScript 规范里面的关键字，module 是一个对象，而 require 是一个函数
 
 ```js
 console.log(typeof module); // object
 console.log(typeof require); // function
 ```
 
-明确 module 和 require 的对象的本质之后，理解 CommonJS 就容易多了，对象无非就是方法，属性这些内容。
+module 和 require 的本质是对象，对象无非就是方法，属性这些内容。
 
-### require
+## 包装器函数
+
+在模块代码执行之前，Node.js 会对模块做一个包装，包装结构像下面这样
+
+```js
+(function (exports, require, module, __filename, __dirname) {
+  // Module code actually lives in here
+});
+```
+
+通过这样一个包装函数传递，传递与模块相关的参数值，在每个模块中都可以用 module, exports 代表当前模块的内容，使用非常方便。
+
+## module
+
+创建一个 `a.js`
+
+```js title="a.js"
+module.exports = {
+  name: "esmyy",
+};
+```
+
+定义一个 `demo.js` 引用 `a.js`
+
+```js title="demo.js"
+const a = require("./a");
+console.log(module);
+```
+
+打印结果如下
+
+```js
+Module {
+  id: '.',
+  path: '/Users/esmyy/demo',
+  filename: '/Users/esmyy/demo/demo.js',
+  loaded: false,
+  // 导出对象
+  exports: {},
+  // 记录了导入的模块
+  children: [
+    Module {
+      id: '/Users/esmyy/demo/a.js',
+      path: '/Users/esmyy/demo',
+      exports: {
+        name: 'esmyy'
+      },
+      filename: '/Users/esmyy/demo/a.js',
+      loaded: true,
+      children: [],
+      paths: [
+        '/Users/esmyy/demo/node_modules',
+        '/Users/esmyy/node_modules',
+        '/Users/node_modules',
+        '/node_modules'
+      ]
+    }
+  ],
+  // 模块查找路径
+  paths: [
+    '/Users/esmyy/demo/node_modules',
+    '/Users/esmyy/node_modules',
+    '/Users/node_modules',
+    '/node_modules'
+  ]
+}
+```
+
+属性比较少，没有复杂的内容，比较特别的是这个 loaded 属性，从这里看它的作用不是很明显，其实是用来标记是否已经加载，解决循环依赖的问题。
+
+## require
 
 require 的结构如下
 
@@ -105,79 +162,7 @@ require 函数如下
 
 没有难以理解的内容，各属性和其作用也很容易对应上。
 
-### module
-
-创建一个 `a.js`
-
-```js title="a.js"
-module.exports = {
-  name: "esmyy",
-};
-```
-
-定义一个 `demo.js` 引用 `a.js`
-
-```js title="demo.js"
-const a = require("./a");
-console.log(module);
-```
-
-打印结果如下
-
-```js
-Module {
-  id: '.',
-  path: '/Users/esmyy/demo',
-  filename: '/Users/esmyy/demo/demo.js',
-  loaded: false,
-  // 导出对象
-  exports: {},
-  // 记录了导入的模块
-  children: [
-    Module {
-      id: '/Users/esmyy/demo/a.js',
-      path: '/Users/esmyy/demo',
-      exports: {
-        name: 'esmyy'
-      },
-      filename: '/Users/esmyy/demo/a.js',
-      loaded: true,
-      children: [],
-      paths: [
-        '/Users/esmyy/demo/node_modules',
-        '/Users/esmyy/node_modules',
-        '/Users/node_modules',
-        '/node_modules'
-      ]
-    }
-  ],
-  // 模块查找路径
-  paths: [
-    '/Users/esmyy/demo/node_modules',
-    '/Users/esmyy/node_modules',
-    '/Users/node_modules',
-    '/node_modules'
-  ]
-}
-```
-
-属性比较少，没有复杂的内容，比较特别的是这个 loaded 属性，从这里看它的作用不是很明显，其实是用来标记是否已经加载，解决循环依赖的问题。
-
-介绍一下 Module 结构，这是 CommonJS 中对于每个模块的描述，用 TS 描述如下
-
-```ts
-interface Module {
-  id: string;
-  path: string;
-  exports: any;
-  filename: string;
-  loaded: Boolean;
-  children: Module[];
-  paths: string[];
-}
-```
-
-### 源码概览
+## 源码概览
 
 module 和 require 的结构都比较简单，并没有难以理解的内容。但做一次深入一些的归纳，对于这些小模块，我还是要快速看一下源码。
 源码位于 `node/lib/internal/modules/cjs`
@@ -301,46 +286,10 @@ require 对象里面需要关注的就是 require.cache，这是一个对象，�
 
 多次 require 的时候，发现已经有了，就直接 return 了，这就是所谓的多次导入只执行一次。
 
-### require vs module.require
+## require vs module.require
 
-## ES6 Module
-
-## Webpack 中的模块加载原理
-
-JS 中的内容，在 loader 转换之后，其实还是没有转换掉”import“ 或者 ”export“ 之类的内容。在 compilation 的 seal 才会对各个模块中的导入导出相关的关键字进行替换，替换为 webpack_require 相关的属性。根据模块的不同，输出的引导函数中，会定义类似于 webpack_require.r，webpack_require.n 等这样的工具函数用以获取模块，在不同类型的模块化规范间做转换。
-
-<!-- https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Modules -->
-
-<!-- JS的加载过程 https://v8.dev/features/modules#mjs -->
-<!-- importmap. -->
-
-<!-- v8 https://v8.dev/docs -->
-<!-- https://hacks.mozilla.org/2018/03/es-modules-a-cartoon-deep-dive/ -->
-
-<!-- 依赖管理 -->
-
-<!-- 查看 NodeJS的源码 https://github.com/nodejs/node/blob/main/lib/internal/modules/cjs/loader.js -->
-
-### Module
-
-首先介绍一个 Module 结构，这是 CommonJS 中对于每个模块的描述
-
-```ts
-interface Module {
-  id: string;
-  path: string;
-  exports: any;
-  filename: string;
-  loaded: Boolean;
-  children: Module[];
-  paths: string[];
-}
-```
+## 循环引用问题解决
 
 ## 参考
 
-[Node.js 官网 Modules: CommonJS modules](https://nodejs.org/docs/latest-v16.x/api/modules.html#modules-commonjs-modules)
-
-<!-- node:fs 和 fs 有什么区别 -->
-
-<!-- 写文章的能力还是很需要提高呀，差太多了，时常回来看看自己写的内容，就会发现写得很多问题 -->
+[Node.js Modules](https://nodejs.org/docs/latest-v16.x/api/modules.html)

@@ -1,6 +1,6 @@
 # ICMP
 
-ICMP 全称 Internet Control Message Protocol，关键在于 Message，根据得到的消息做相应的处理，这个消息有主动获取的，有被动接收的。
+ICMP 因特网消息控制协议，是一个用来向源主机进行错误报告和控制的协议，
 
 使用 ICMP 的工具 ping, traceroute 等
 
