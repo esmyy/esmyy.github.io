@@ -6,10 +6,12 @@
 
 ```mermaid
   flowchart LR
-  A(浏览器缓存) --> B(系统缓存) --> hosts(hosts)
+  A(浏览器缓存) --> B(系统缓存) --> hosts(hosts) --> 向外查找
 ```
 
-### 浏览器缓存
+### 本地查找
+
+##### 浏览器
 
 以 Chrome 为例，在之前的版本，DNS 相关的内容可以在以下页面查看
 
@@ -21,9 +23,26 @@ chrome://net-internals/#dns
 
 > The net-internals events viewer and related functionality has been removed. Please use [chrome://net-export](chrome://net-export) to save netlogs and the external [netlog_viewer](https://netlog-viewer.appspot.com/) to view them.
 
-## DNS
+:::caution ？
+TODO: 缓存时间是完全由 DNS 解析时设置的，还是浏览器会结合着看？
+:::
 
-DNS 用于根据域名获取 IP 地址，需要了解常规的 DNS，以及 CDN DNS 和 HTTP DNS，还需要了解 SLB。
+##### 系统缓存
+
+操作系统中的缓存这块是和 `mDNSResponder` 这个程序有关，应该是在内存中，而不是持久到文件里面了，没有特别直接的方式能够查看缓存列表。
+这块一般不关注到也没有太多关系。
+
+清理缓存的方式是
+
+```shell
+sudo killall -HUP mDNSResponder
+```
+
+##### hosts
+
+`/etc/hosts` 是一个本地持久的映射表，一般用来配置 localhost。
+
+修改 hosts 文件后需要刷新系统缓存。
 
 ## HttpDNS
 
