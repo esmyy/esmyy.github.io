@@ -1,12 +1,12 @@
 # DNS
 
-## 解析过程
+## 查询过程
 
-在对外查找之前，本机的查找过程是
+在对外查询之前，本机的查找过程是
 
 ```mermaid
   flowchart LR
-  A(浏览器缓存) --> B(系统缓存) --> hosts(hosts) --> 向外查找
+  A(浏览器缓存) --> B(系统缓存) --> hosts(hosts) --> 向外查询
 ```
 
 ### 本地查找
@@ -22,6 +22,17 @@ chrome://net-internals/#dns
 新版的 Chrome 已经移除了具体的缓存展示，只有 lookup 和 clear 功能。现在需要在 [chrome://net-export](chrome://net-export) 导出缓存文件，然后使用 [netlog_viewer](https://netlog-viewer.appspot.com/) 查看。
 
 > The net-internals events viewer and related functionality has been removed. Please use [chrome://net-export](chrome://net-export) to save netlogs and the external [netlog_viewer](https://netlog-viewer.appspot.com/) to view them.
+
+示例如下
+
+![dns log viewer](../assets/dns-log.jpg)
+
+浏览器中的 TTL 是毫秒数，表示浏览器缓存的时间，与 Expires 有对应关系。域名的 TTL 在权威 DNS 配置，本地 DNS 会缓存记录，
+浏览器查到的 DNS 记录一般是本地 DNS 提供的，一般而言
+
+```text
+浏览器里面的 TTL = 权威 NS 配置的 TTL - 本地 NS 已经缓存的时间
+```
 
 :::caution ？
 TODO: 缓存时间是完全由 DNS 解析时设置的，还是浏览器会结合着看？
@@ -43,6 +54,42 @@ sudo killall -HUP mDNSResponder
 `/etc/hosts` 是一个本地持久的映射表，一般用来配置 localhost。
 
 修改 hosts 文件后需要刷新系统缓存。
+
+### 服务器查找
+
+服务器查找就是常说的递归查询和迭代查询两个过程。不考虑缓存的情况，查询过程如下
+
+```mermaid
+  flowchart LR
+
+  subgraph "递归查询就是 A - B - C - X... 这样的过程"
+    host(请求主机)
+    local(本地DNS服务器)
+    host --1--> local
+    local --8--> host
+  end
+
+  local --- local2
+
+  subgraph "迭代查询：B - C, B - D, B - X..."
+    local2(本地DNS服务器)
+    root(根DNS服务器)
+    top(顶级域DNS服务器)
+    auth(权威DNS服务器)
+    local2 --2--> root
+    root --3--> local2
+    local2 --4--> top
+    top --5--> local2
+    local2 --6--> auth
+    auth --7--> local2
+  end
+```
+
+## DNS 缓存
+
+有人的地方就有江湖，有 DNS 的地方就有缓存。
+
+<!-- 本地DNS的理解，是一个重点 -->
 
 ## HttpDNS
 
@@ -72,3 +119,5 @@ ping
 
 完全找不到，不可能没有系统缓存呀
 ，系统缓存和 hosts 文件之间的关系是什么
+
+### DNS TTL

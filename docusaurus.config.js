@@ -69,20 +69,28 @@ const config = {
 
   plugins: ["./postcss-tailwind-loader", "./mindmap-plugin"],
 
-  themeConfig:
-    /** @type {import('@docusaurus/preset-classic').ThemeConfig} */
-    ({
-      tableOfContents: {
-        minHeadingLevel: 2,
-        maxHeadingLevel: 4,
+  /** @type {import('@docusaurus/theme-mermaid').ThemeConfig} */
+  themeConfig: {
+    tableOfContents: {
+      minHeadingLevel: 2,
+      maxHeadingLevel: 4,
+    },
+    navbar: navbar,
+    footer: footer,
+    prism: {
+      theme: lightCodeTheme,
+      darkTheme: darkCodeTheme,
+    },
+    mermaid: {
+      theme: {
+        light: "forest",
+        dark: "forest",
       },
-      navbar: navbar,
-      footer: footer,
-      prism: {
-        theme: lightCodeTheme,
-        darkTheme: darkCodeTheme,
+      options: {
+        themeVariables: {},
       },
-    }),
+    },
+  },
 };
 
 module.exports = config;
