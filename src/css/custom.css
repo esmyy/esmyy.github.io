@@ -170,3 +170,12 @@ p {
 .cluster-label {
   margin: 8px 0;
 }
+
+g.fullwidth {
+  display: inline-block;
+  width: 100%;
+}
+
+g.fullwidth rect {
+  width: 100%;
+}
