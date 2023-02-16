@@ -166,3 +166,7 @@ p code {
 p {
   line-height: 24px;
 }
+
+.cluster-label {
+  margin: 8px 0;
+}
