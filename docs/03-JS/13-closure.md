@@ -1,23 +1,16 @@
 # 闭包
 
-闭包是作用域闭包，要理解闭包，先理解作用域。
+> A closure is the combination of a function bundled together (enclosed) with references to its surrounding state (the lexical environment). In other words, a closure gives you access to an outer function's scope from an inner function. In JavaScript, closures are created every time a function is created, at function creation time.
 
-## 闭包的描述
+上面是 MDN 的解释，如果理解了执行上下文和作用域，会发现这里说得很对，反之，可能会困惑。
 
-关于闭包，有很多比较典型的描述
+## 闭包是什么
 
-- **你不知道的 JS**：当函数可以记住并访问所在的词法作用域时，就产生了闭包，即使函数是在当前词法作用域之外执行。
+关于闭包，有千种描述，万般解释，我也很是困扰过。
 
-- **JavaScript 高级教程**：闭包指的是那些引用了另一个函数作用域中变量的函数，通常是在嵌套函数中实现的。
-- **另一种很普遍的描述**：函数 foo 返回了一个函数 bar，并且函数 bar 中使用了函数 foo 的变量，bar 函数就叫闭包。
-  不能说这些描述不正确，都很正确，但我却总觉得差点意思，有些蹊跷。照这些说法
+很多人在解释的时候都是先上一个例子，看着例子说，这就是闭包。或者说闭包形成的条件“父函数返回子函数，子函数引用父函数中的变量，子函数在父函数之外调用”之类的。都对，但我老感觉这样的回答不得劲，差点什么。闭包是什么？我期望下一个很明确的定义。
 
-- 怎样怎样....产生了闭包
-- 闭包....是函数，是函数，函数，数...
-
-第 1 点，很明显只是在描述闭包的 形，只是在想方设法告诉你，闭包长什么样子。第 2 点，把闭包说成是某些条件下的函数，对于理解并没有太大的帮助。
-
-走过千山万水，见种种描述，此般那般解释，对于闭包，终究需要自己去补全以上种种描述中所差的那点意思。
+**闭包，它就是一个对象，是一个词法环境对象，或者说它是词法环境的子集**
 
 ## 闭包的形成
 
@@ -26,92 +19,90 @@
 ```js
 function foo() {
   var a = 1;
+  var b = 2;
   function bar() {
+    // highlight-next-line
     console.log(a);
   }
 
-  return bar;
+  function baz() {
+    // highlight-next-line
+    console.log(b);
+  }
+
+  bar();
+  baz();
 }
 
-var baz = foo();
-baz(); // 1
+var func = foo();
+func(); // 1
 ```
 
-满足了以下三个条件：
+这就是常说的”父函数返回子函数，子函数引用父函数中的变量，子函数在父函数之外调用“。
 
-- 嵌套的函数
-- 内部函数访问了外部函数作用域中定义的变量
-- 内部定义的函数被返回，在其定义的词法作用域之外调用
+## 闭包的场景
 
-也就是常说的
-
-> 父函数返回子函数，子函数引用父函数中的变量，子函数在父函数之外调用
-
-闭包长这个样子，具备了以下能力
-
-- **独立的空间存储变量**：通过外部函数 foo，创建了一个独立的作用域去存储变量。
-- **提供外部使用这些变量的方法**：返回一个 bar 函数，bar 内部使用了这些变量。
-- **变量留存在内存中**：外部函数执行外之后，变量仍能够存在，这涉及到垃圾回收策略，被引用的变量，将继续存在而不被回收。
-
-从能力的角度看，闭包就是这些能力的一个组合。
-
-## 需求的角度看闭包
-
-做一件事，当然是因为要满足某个需求啦。首先来看一个需求，对以下数组按照 id 升序排序
+`createXXXFunction` 是很常见的利用闭包的例子。看一个 🌰，对以下数组按照 id 升序排序
 
 ```js
 const arr = [
-  { id: 2333, value: 22 name: 'mayueyue' },
-  { id: 666, value: 80, name: 'myy' },
-  { id: 888, value: 6, name: 'fengpeng' },
-]
+  { id: 2333, value: 22, name: "mayueyue" },
+  { id: 666, value: 80, name: "myy" },
+  { id: 888, value: 6, name: "fengpeng" },
+];
 ```
 
 这个很简单，可以使用 sort 方法提供 compareFunction 即可
 
 ```js
-const sortByIdArr = arr.sort(function (a, b) {
-  const val1 = obj1["id"];
-  const val2 = obj2["id"];
-  if (val1 > val2) {
-    return 1;
-  } else if (val1 < val2) {
-    return -1;
-  } else {
-    return 0;
-  }
-});
+function compare(a, b) {
+  return a["id"] - b["id"];
+}
+
+const sortByIdArr = arr.sort(compare);
 ```
 
-但是这样写法拓展性不强，如果又有一个需求是通过其他属性如 value 进行升序排序，总不能拷一份 compareFunction 去改改吧，那就太难看了。这个时候可以引入一个”比较函数的生成函数“来灵活地创建 compareFunction，如下
+如果又有一个需求是按照其他属性如 `value` 进行排序要怎么办呢？
+一种方式是下面这样
 
 ```js
-function createComparisonFunction(prop) {
-  return function (obj1, obj2) {
-    const val1 = obj1[prop];
-    const val2 = obj2[prop];
-    if (val1 > val2) {
-      return 1;
-    } else if (val1 < val2) {
-      return -1;
-    } else {
-      return 0;
-    }
+function compare(a, b) {
+  return a["value"] - b["value"];
+}
+
+const sortByIdArr = arr.sort(compare);
+```
+
+考虑排序属性多变的场景。一种处理是可以把属性名传进去，
+
+```js
+function compare(a, b, prop) {
+  return a[prop] - b[prop];
+}
+
+const sortByIdArr = arr.sort((a, b) => compare(a, b, "value"));
+```
+
+也可以引入一个”函数的生成函数“，
+
+```js
+function createCompareFunction(prop) {
+  return function (a, b) {
+    return a[prop] - b[prop];
   };
 }
 
-const idCompareFunction = createComparisonFunction("id");
-const sortByIdArr = arr.sort(idCompareFunction);
-
-const valueCompareFunction = createComparisonFunction("value");
-const sortByValueArr = arr.sort(valueCompareFunction);
+const compare = createCompareFunction("value");
+const sortByValueArr = arr.sort(compare);
 ```
 
-这类 createXXXFunction 是很常见的利用闭包的例子，在这个例子里面，直接的需求是进行排序，闭包是一种实现的方案。或者也可以说，闭包是实现的一种间接的，深层次的需求。
+createCompareFunction 函数作用域里面保存了 prop，就相当于提前预置了要比较的属性，在后续比较时，能够使用预置的配置。
 
-在这个例子中，createComparisonFunction 函数作用域里面保存了 prop，在后续比较时，就相当于提前预置了要比较的属性。
+这类”创建函数的函数“，是闭包很常用的场景
 
-从需求的角度看，闭包是一种实现方案，它会创建独立的空间，暂时放一些东西，并提供对这些变量/属性的操作方法。闭包作为一种实现方案，其实就是闭包的 3 个能力组合的应用。
+从需求的角度看，闭包是一种实现方案，它会创建独立的空间，暂时放一些东西，并提供对这些变量/属性的操作方法。
+
+闭包作为一种实现方案，其实就是闭包的 3 个能力组合的应用。
 
 ## 作用域角度看闭包
 

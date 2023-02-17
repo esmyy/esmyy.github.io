@@ -87,6 +87,10 @@ const config = {
         dark: "forest",
       },
       options: {
+        flowchart: {
+          htmlLabels: true,
+          diagramPadding: 0,
+        },
         themeVariables: {},
       },
     },
