@@ -2,57 +2,21 @@
 
 > A closure is the combination of a function bundled together (enclosed) with references to its surrounding state (the lexical environment). In other words, a closure gives you access to an outer function's scope from an inner function. In JavaScript, closures are created every time a function is created, at function creation time.
 
-上面是 MDN 的解释，如果理解了执行上下文和作用域，会发现这里说得很对，反之，可能会困惑。
+关于闭包，有很多解释，我也很是困扰过。理解闭包，核心是要理解执行上下文和作用域。
 
-## 闭包是什么
+## 经典闭包
 
-关于闭包，有千种描述，万般解释，我也很是困扰过。
-
-很多人在解释的时候都是先上一个例子，看着例子说，这就是闭包。或者说闭包形成的条件“父函数返回子函数，子函数引用父函数中的变量，子函数在父函数之外调用”之类的。都对，但我老感觉这样的回答不得劲，差点什么。闭包是什么？我期望下一个很明确的定义。
-
-**闭包，它就是一个对象，是一个词法环境对象，或者说它是词法环境的子集**
-
-## 闭包的形成
-
-闭包典型的代码示例如下
-
-```js
-function foo() {
-  var a = 1;
-  var b = 2;
-  function bar() {
-    // highlight-next-line
-    console.log(a);
-  }
-
-  function baz() {
-    // highlight-next-line
-    console.log(b);
-  }
-
-  bar();
-  baz();
-}
-
-var func = foo();
-func(); // 1
-```
-
-这就是常说的”父函数返回子函数，子函数引用父函数中的变量，子函数在父函数之外调用“。
-
-## 闭包的场景
-
-`createXXXFunction` 是很常见的利用闭包的例子。看一个 🌰，对以下数组按照 id 升序排序
+看一个 🌰，对以下数组按照 id 升序排序
 
 ```js
 const arr = [
-  { id: 2333, value: 22, name: "mayueyue" },
+  { id: 2333, value: 22, name: "esmyy" },
   { id: 666, value: 80, name: "myy" },
-  { id: 888, value: 6, name: "fengpeng" },
+  { id: 888, value: 6, name: "yy" },
 ];
 ```
 
-这个很简单，可以使用 sort 方法提供 compareFunction 即可
+这个很简单，可以使用 sort 方法提供比较方法
 
 ```js
 function compare(a, b) {
@@ -73,7 +37,7 @@ function compare(a, b) {
 const sortByIdArr = arr.sort(compare);
 ```
 
-考虑排序属性多变的场景。一种处理是可以把属性名传进去，
+考虑排序属性多变的场景。一种处理是可以把属性名传进去。
 
 ```js
 function compare(a, b, prop) {
@@ -83,11 +47,11 @@ function compare(a, b, prop) {
 const sortByIdArr = arr.sort((a, b) => compare(a, b, "value"));
 ```
 
-也可以引入一个”函数的生成函数“，
+这样实现的话，是每次比较都会将 prop 传递进去。还有一种方式，提前预置 prop，如下
 
 ```js
 function createCompareFunction(prop) {
-  return function (a, b) {
+  return function compare(a, b) {
     return a[prop] - b[prop];
   };
 }
@@ -96,62 +60,165 @@ const compare = createCompareFunction("value");
 const sortByValueArr = arr.sort(compare);
 ```
 
-createCompareFunction 函数作用域里面保存了 prop，就相当于提前预置了要比较的属性，在后续比较时，能够使用预置的配置。
+外层的 createCompareFunction 保存了 prop，返回一个 compare 函数，而内部的 compare 函数引入了外部函数的变量。
+这种实现相当于提前预置了要比较的属性，在后续比较时能够直接使用预置好的配置。这是闭包很经典的用法，当执行到 compare 函数时，其变量查找规则会引用一个外层函数`createCompareFunction`闭包，如下
 
-这类”创建函数的函数“，是闭包很常用的场景
+<MyImg src={require("./assets/2023-02-19-22-13-53.png")} width="600px" />
 
-从需求的角度看，闭包是一种实现方案，它会创建独立的空间，暂时放一些东西，并提供对这些变量/属性的操作方法。
+这个例子符合一个流传很广的关于闭包的描述
+：**父函数返回子函数，子函数引用父函数中的变量，子函数在父函数之外调用**。
+我将这种情况下的闭包，称之为**经典闭包**。
 
-闭包作为一种实现方案，其实就是闭包的 3 个能力组合的应用。
+:::info 注
+本文说的父子，是泛指上下级关系
+:::
+
+## 闭包形成的必要条件
+
+在经典闭包里面说的3个条件中，闭包形成的必要条件其实只有一个
+
+- 子函数引用父函数中的变量
+- ~~父函数返回子函数~~
+- ~~子函数在父函数之外调用~~
+
+“子函数引用父函数中的变量”这个条件也可以拆成两个 —— 函数嵌套，且子函数访问父函数中声明的变量。
+
+```js title="例1"
+function foo() {
+  let a = 1;
+  function bar() {
+    let b = 2;
+    // highlight-next-line
+    console.log(a + b);
+  }
+
+  bar();
+}
+foo();
+```
+
+这里有`foo`和`bar`两个函数作用域，在子函数 `bar` 中引用了上级函数作用域`foo`的变量，但并没有返回 `bar`，但这也已经是一个闭包
+
+<MyImg src={require("./assets/2023-02-19-22-22-54.png")} width="600px" />
+
+这个例子说明，”子函数引用父函数中的变量“已经是形成闭包的充分条件。至于经典闭包里面的另外两个条件，他们是“经典闭包”里面的“经典”的条件，不是”闭包“的条件。
 
 ## 作用域角度看闭包
 
-为了便于理解，可以用一个对象描述作用域，这个对象我们称为作用域对象
+闭包关注的也是如何存储和查找变量，它是作用域的一个具体应用。
+前面的例子
+
+```js
+function foo() {
+  let a = 1;
+  function bar() {
+    let b = 2;
+    // highlight-next-line
+    console.log(a + b);
+  }
+
+  bar();
+}
+foo();
+```
+
+从作用域的角度看，嵌套的函数中，子函数就 **有可能** 会被返回，这意味着上级函数作用域(所在的执行上下文)执行完成之后，其内定义的变量，仍可能需要会被用到。假如把 foo 换成一个块级作用域
 
 ```js
 {
-  // ...
-  [[outer]]: // parent scope reference
+  let a = 1;
+  function bar() {
+    let b = 2;
+    // highlight-next-line
+    console.log(a + b);
+  }
+
+  bar();
 }
 ```
 
-每个作用域对象中有一个 `[[outer]]` 属性，用以指向父级作用域，形成作用域链。以下面的例子来说
+这还是不是一个闭包？不是！
 
-![Call Stack](../../images/js/call-stack.jpg)
+<MyImg src={require("./assets/2023-02-19-16-12-44.png")} width="600px" />
 
-从作用域的角度，我们关心的是变量查找的规则，对于 bar 函数作用域而言，关切的是通过 [[outer]] 保持对所在的词法作用域(foo 函数作用域)的引用。按理说引用的 foo 函数作用域对象应该像下面这样
+这两个例子的区别，就在于 **上级作用域内的变量，是否可能在其代码段执行完成之后，仍无法释放。**
+只要“有可能”，就需要将那些被子函数引用的变量保留，这些变量保存在一个对象里面，这个对象就称为闭包。
+
+## 闭包包含哪些变量
+
+看一个🌰
 
 ```js
-foo: {
-  a;
-  b;
-  bar[[outer]];
+function foo() {
+  let a = 1;
+  let b = 2;
+  let z = 666;
+  function bar() {
+    let c = 3;
+    // highlight-next-line
+    console.log('bar a + c:', a + c);
+  }
+  function baz() {
+    let d = 4;
+    console.log('baz b + d:', b + d);
+  }
+  bar();
+  baz();
 }
+
+foo();
 ```
 
-实际上却是这个 Closure (foo)
+这里两个子函数，bar 引用了父作用域中的 `a`，baz 引用了父作用域中的 `b`，那么这个时候闭包是什么情况呢？结果如下
+
+<MyImg src={require("./assets/2023-02-19-23-02-39.png")} width="600px" />
+
+闭包包含的变量，是所有子函数中用到的父函数中的变量，不是某个子函数引用的变量，也不是直接把父级作用域中的变量全部保留下来。
+
+这里也有一些注意事项，由于闭包会包含**所有子函数中用到的父函数中的变量**，即使是某个函数不会再执行，其引用的变量也仍旧会被复制
 
 ```js
-Closure(foo);
-a: 1;
+function foo() {
+  let a = 1;
+  let b = 2;
+  let z = 666;
+  function bar() {
+    let c = 3;
+    // highlight-next-line
+    console.log('bar a + c:', a + c);
+  }
+  function baz() {
+    let d = 4;
+    console.log('baz b + d:', b + d);
+  }
+
+  baz(); // 或者注释掉这行
+  return bar;
+}
+
+foo();
 ```
 
-Closure (foo) 是 foo 函数作用域中变量的子集，而不是整个 foo 函数作用域。这是因为 **[[outer]]所引用的对象，和 “外部作用域对象” 两者并不一定等价**。当 bar 执行时，foo 函数已经执行完成，虽然 bar 还需要 foo 函数作用域对象中的变量，但是显然只是需要一部分。Closure (foo) 是将所需要的那部分变量进行拷贝，而那些不再被引用的变量就可以释放了。
+虽然 baz 不会在外部执行，但闭包仍旧会包含其所引用的 `b`。
 
-:::tips 小结
-从作用域的角度，闭包是作用域链上的一个节点，是内部函数的 [[outer]] 指向的一个对象，是**外部函数作用域中，被内部函数引用的那部分变量的集合。**
+<MyImg src={require("./assets/2023-02-19-23-18-48.png")} width="600px" />
+
+至于如何知道内部函数`bar`和`baz`用到了什么变量，这涉及到预解析的概念，不在此处特别说明。
+
+:::info 预解析
+意思就是虽然不会很详细的去解析和执行函数内部的代码，但是会看看引用了哪些外部的变量。
 :::
 
-## 总结
+## 结总
 
-现在闭包通常是指 ”父函数返回子函数，子函数引用父函数中的变量，子函数在父函数之外调用“ 这样的一种情况，这可谓之”经典闭包“。
+闭包理解起来很让人挫败，因为涉及到的东西不少，需要能够把执行上下文，作用域这些核心的内容串起来。当函数 **可能** 会在其所声明的作用域之外调用时，引擎就把函数所引用的外部变量复制，放到一个闭包对象去。
 
-**从能力角度：**闭包是 3 大能力的组合。像 IIFE，作为 namespace 的对象，模块，等具备类似于经典闭包的能力。
+闭包是什么 —— 闭包是一个对象，包含了函数作用域中，被子函数所引用的那部分变量。
 
-**从需求角度**：闭包是一种实现方案。
+经典闭包：父函数返回子函数，子函数引用父函数中的变量，子函数在父函数之外调用
 
-**从作用域角度**：闭包是外部函数作用域中，被内部函数引用的那部分变量的集合。
+闭包：子函数引用父函数中的变量
 
-我们经常会遇到“xxx 是不是闭包？”这样的问题，通常意义来说，闭包等于经典闭包，要能力和形式都一致才行。
-
-重要的不是去判断某段代码“是不是闭包”，重要的是具备的能力以及满足了需要。闭包是一组特定能力组合的称呼，通过这个能力组合，作为一种经典的解决方案去实现我们的需求。
+:::tip 说明
+虽然从作用域的角度看，闭包是一个对象，但说到闭包，很多时候是指使用闭包的场景。闭包关注的是变量存储和查找的规则，把握这个核心就行。
+:::
