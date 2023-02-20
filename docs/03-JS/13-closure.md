@@ -75,7 +75,7 @@ const sortByValueArr = arr.sort(compare);
 
 ## 闭包形成的必要条件
 
-在经典闭包里面说的3个条件中，闭包形成的必要条件其实只有一个
+在经典闭包里面说的 3 个条件中，闭包形成的必要条件其实只有一个
 
 - 子函数引用父函数中的变量
 - ~~父函数返回子函数~~
@@ -146,7 +146,7 @@ foo();
 
 ## 闭包包含哪些变量
 
-看一个🌰
+看一个 🌰
 
 ```js
 function foo() {
@@ -156,11 +156,11 @@ function foo() {
   function bar() {
     let c = 3;
     // highlight-next-line
-    console.log('bar a + c:', a + c);
+    console.log("bar a + c:", a + c);
   }
   function baz() {
     let d = 4;
-    console.log('baz b + d:', b + d);
+    console.log("baz b + d:", b + d);
   }
   bar();
   baz();
@@ -185,11 +185,11 @@ function foo() {
   function bar() {
     let c = 3;
     // highlight-next-line
-    console.log('bar a + c:', a + c);
+    console.log("bar a + c:", a + c);
   }
   function baz() {
     let d = 4;
-    console.log('baz b + d:', b + d);
+    console.log("baz b + d:", b + d);
   }
 
   baz(); // 或者注释掉这行
