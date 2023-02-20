@@ -70,3 +70,7 @@ json, toJSON
 ## mermaid 主题
 
 默认颜色： #d1e378
+
+## iterm2
+
+iterm 无限滚动
