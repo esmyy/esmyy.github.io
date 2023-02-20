@@ -1,5 +1,15 @@
 # DNS
 
+DNS 相关的内容，包含
+
+```mermaid
+  flowchart LR
+  DNS --> 查询过程
+  DNS --> 缓存应用
+  DNS --> 常用工具
+  DNS --> 特别的DNS
+```
+
 ## 查询过程
 
 在对外查询之前，本机的查找过程是

@@ -130,6 +130,8 @@ foo();
 
 <MyImg src={require("./assets/scope-outer.jpg")} width="400px" />
 
+## 闭包场景下的作用域链
+
 ## 垃圾回收
 
 ## 有点小的结
