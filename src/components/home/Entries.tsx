@@ -13,7 +13,7 @@ const FeatureList: FeatureItem[] = [
   {
     title: "技术手册",
     Svg: require("@site/static/img/undraw_docusaurus_mountain.svg").default,
-    link: "/docs",
+    link: "/todo",
     description: (
       <>
         技术点研究，专题文档，工具库，实践方案等。
