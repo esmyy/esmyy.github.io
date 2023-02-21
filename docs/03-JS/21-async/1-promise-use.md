@@ -1,30 +1,8 @@
-# Promise
-
-<!-- Promise 通过 resolve 和 reject，利用底层的 EventLoop 机制，降低了 executor 和 cb 的耦合度，在这个基础上设计了 then 和 catch 等实例方法，由嵌套回调改为链调用形式，但本质上，onFulfilled 和 onError 函数等，仍是回调函数。 -->
+# 熟悉 Promise 使用
 
 ## 执行器函数
 
-Promise 的基本调用格式如下
-
-```js
-new Promise(executor)
-  .then((data) => {
-    // ...
-  })
-  .catch((e) => {
-    // ...
-  });
-```
-
-想特别说明的是 **executor** 这个执行器函数。
-
-```js
-(resolve, reject) => {
-  // ...
-};
-```
-
-通过 “执行器函数” 这个名称，理解它的同步性变得自然多了。与回调做对比如下
+执行器函数
 
 ```js
 function double(value, success, failure) {
@@ -47,24 +25,7 @@ double(2, (value) => {
 })
 ```
 
-executor 就像这个异步操作函数 `double` 罢了，它的执行同步性一目了然，当然，它的结构更加统一，规范且简洁。
-
 在异步终止状态来临时，不再是直接调用注册的 `success` 或者 `failure` 回调，而是调用 `resolve` 或 `reject`，通过 EventLoop 机制间接调用回调函数。
-
-## 静态方法
-
-Promise 有 6 个静态方法，如今兼容性较好，最常用的是前面三个
-
-| 名称                         |
-| ---------------------------- |
-| Promise.resolve              |
-| Promise.reject               |
-| Promise.all                  |
-| Promise.race(iterable)       |
-| Promise.allSettled(iterable) |
-| Promise.any(iterable)        |
-
-Promise.resolve 和 Promise.reject 调用就等于在执行器函数里面调用 resolve 和 reject，这都不必细说了。
 
 ## Promise.all
 
@@ -360,3 +321,5 @@ timer2;
   promise究竟要怎样去理解，到怎样的程度才算是理解透彻和掌握？
   理解的基础上，手写 Promise 并没有那么难
  -->
+
+<!-- promise 并不局限于接口请求，EventLoop 的综合应用 -->

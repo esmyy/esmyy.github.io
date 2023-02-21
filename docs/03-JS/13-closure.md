@@ -2,7 +2,7 @@
 
 > A closure is the combination of a function bundled together (enclosed) with references to its surrounding state (the lexical environment). In other words, a closure gives you access to an outer function's scope from an inner function. In JavaScript, closures are created every time a function is created, at function creation time.
 
-关于闭包，有很多解释，我也很是困扰过。理解闭包，核心是要理解执行上下文和作用域。
+关于闭包，有很多解释，我也很是困扰过。理解闭包，核心是要理解执行上下文和作用域，把握闭包的本质 —— 它就是一个对象。
 
 ## 经典闭包
 

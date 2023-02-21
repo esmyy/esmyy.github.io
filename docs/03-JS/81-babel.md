@@ -1,6 +1,13 @@
 # Babel
 
-Babel is a JavaScript compiler，既然是 compiler，过程基本上就是 parse(生成 AST)，optimize(AST 优化)和 generate(代码生成)三个过程。
+> Babel is a JavaScript compiler. Use next generation JavaScript, today.
+
+Babel 既然是 compiler，过程基本上就必不可少三个过程
+
+```mermaid
+  flowchart LR
+  parse(生成AST) --> optimize(AST 优化) --> generate(代码生成)
+```
 
 | 名称  | 版本 |
 | :---: | :--: |
@@ -8,9 +15,9 @@ Babel is a JavaScript compiler，既然是 compiler，过程基本上就是 pars
 
 ## babel
 
-babel 命令定义在@babel/cli 包中，即 babel/packages/babel-cli/src/index.js
+`babel` 命令定义在 `@babel/cli` 包中
 
-```js
+```js title="babel/packages/babel-cli/src/index.js"
 #!/usr/bin/env node
 
 import parseArgv from "./options";
@@ -767,3 +774,5 @@ babel 转码分成三个步骤
 - generate：根据 node.type 去调用预定义好的各种类型节点的生成函数，生成新的代码。
 
 先解析成 AST，然后根据配置的插件和 presets 进行转换，最终再根据 AST 生成转换后的代码。
+
+<!-- 没有抓住核心，太多杂七杂八的东西了 -->
