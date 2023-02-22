@@ -3,11 +3,11 @@
 DNS 相关的内容，包含
 
 ```mermaid
-  flowchart LR
-  DNS --> 查询过程
-  DNS --> DNS缓存
-  DNS --> 特别的DNS
-  DNS --> 常用工具
+  flowchart
+  DNS((DNS)) --> 查询过程(查询过程)
+  DNS --> DNS缓存(DNS缓存)
+  DNS --> 特别的DNS(特别的DNS)
+  DNS --> 常用工具(常用工具)
 ```
 
 为了方便，后面统一使用 NS 表示 NS
@@ -22,6 +22,8 @@ DNS 相关的内容，包含
 ```
 
 ### 本地查找
+
+在本设备查找缓存的过程
 
 ##### 浏览器
 
@@ -39,8 +41,8 @@ chrome://net-internals/#dns
 
 ![dns log viewer](../assets/dns-log.jpg)
 
-浏览器中的 TTL 是毫秒数，表示浏览器缓存的时间，与 Expires 有对应关系。域名的 TTL 在权威 DNS 配置，本地 DNS 会缓存记录，
-浏览器查到的 DNS 记录一般是本地 DNS 提供的，一般而言
+浏览器中的 TTL 是毫秒数，表示浏览器缓存的有效时间，与 Expires 有对应关系。域名的 TTL 在权威 DNS 配置，本地 DNS 会缓存记录，
+浏览器查到的 DNS 记录一般是本地 DNS 提供的
 
 ```text
 浏览器里面的 TTL = 权威 NS 配置的 TTL - 本地 NS 已经缓存的时间
@@ -63,7 +65,7 @@ sudo killall -HUP mDNSResponder
 
 修改 hosts 文件后需要刷新系统缓存。
 
-### 服务器查找
+### 向外查询
 
 服务器查找就是常说的递归查询和迭代查询两个过程。不考虑缓存的情况，查询过程如下
 
@@ -157,7 +159,7 @@ www.baidu.com.  1200 IN CNAME www.a.shifen.com.
 
 ### 本地 NS
 
-本地 NS 这个概念可能不太清晰。当通过 DHCP 接入网络时，一般是 DHCP 下发的，在 Mac 中会缓存到 `/etc/resolv.conf` 中
+通过 DHCP 接入网络时，一般是 DHCP 下发的局域网 NS 地址，在 Mac 中会缓存到 `/etc/resolv.conf` 中
 
 ```text
 #
@@ -179,7 +181,7 @@ nameserver 172.16.1.21
 nameserver 172.16.1.22
 ```
 
-理解为运营商就可以了，毕竟即使中间还有局域网路由器，也是要转发到运营商。大部分的情况，都可以在本地 DNS 找到缓存记录。
+将本地 NS 理解为运营商就可以了，毕竟即使中间还有局域网路由器，也是要转发到运营商。大部分的情况，都可以在本地 DNS 找到缓存记录。
 
 ### 权威 NS
 
@@ -241,3 +243,14 @@ CDN 一般会在权威 NS 中设置 CNAME，当访问某个域名，返回的不
   <summary>根NS只有13个，中国没有？那怎么办呢？</summary>
   <div></div>
 </details>
+
+<!-- 根NS的数据是同步的吗？如何知道某个域名已经被注册 -->
+
+<!-- 本地dns为何不缓存顶级DNS？ -->
+
+<!-- 114.114.114.114、8.8.8.8 -->
+<!-- 添加解析记录后多久生效？
+修改或删除解析后多久生效？
+修改DNS服务器后多久生效？ -->
+<!-- https://support.huaweicloud.com/dns_faq/dns_faq_013.html -->
+<!-- DNS 劫持是什么 -->

@@ -10,14 +10,9 @@
 GET /mypage.html
 ```
 
-```mermaid
-  flowchart LR
-  0.9(单行协议)
-```
-
 ## 1.0 - 支持多种文件
 
-HTTP 1.0 最核心的需求是支持不同类型文件的下载。通过引入 Header，在客户端和服务器之间实现了更详细的协商。
+HTTP 1.0 最核心的需求是支持不同类型文件的下载。
 
 ```mermaid
   flowchart LR
@@ -31,9 +26,16 @@ HTTP 1.0 最核心的需求是支持不同类型文件的下载。通过引入 H
   end
 ```
 
-### 请求描述
+要实现不同文件的协商
 
-为了识别 CSS 和 JavaScript 等不同的文件，在请求头中引入了 `accept` 字段以描述客户端请求的是什么类型文件，`accept-*` 提出了进一步的内容协商
+- 客户端需要提供更明确的需求
+- 服务器需要返回文件的一些描述
+
+这种协商是通过引入请求头，添加具体的描述字段而实现。
+
+### 客户端需求描述
+
+为了识别 CSS 和 JavaScript 等不同的文件。在请求头部中添加了 `accept`，`accept-*` 提出了进一步的内容协商
 
 ```bash
 accept: text/html
@@ -42,9 +44,9 @@ accept-charset: utf-8
 accept-language: zh-CN,zh
 ```
 
-### 应答文件描述
+### 服务器应答说明
 
-服务器通过 `Content-Type` 等字段进行描述被返回的文件
+服务器在收到请求后，也需要对应答的文件做一些描述，以便客户端确认和处理。服务器通过 `Content-Type` 等字段进行描述被返回的文件
 
 ```bash
 content-length: 3495
@@ -53,21 +55,11 @@ content-type: text/html; charset=utf-8
 content-language: en-US
 ```
 
-### 应答状态描述
-
 服务器不一定能够满足客户端的要求，增加 Status Code 来向客户端表明发生了什么。比如说 `accept-language` 的要求我服务器实在做不到，就可以通过 406 来表示。
 
 ```bash
 Status Code: 406
 ```
-
-### 其他
-
-很多重要的字段在 HTTP/1.0 也已经定义，如
-
-- User-Agent 和 Server 表明客户端和服务器的一些信息
-- Location 告诉客户端在某种情况下的下一步操作
-- Pragma，Cache(If-Modified-Since，Expires) 等利用缓存节约流量
 
 ### 不足
 
@@ -87,7 +79,7 @@ HTTP/1.0 中，有这么几个需要注意的问题
 
 每个域名绑定了唯一的 IP，请求时没有 Host 的概念。
 
-<!-- 这个如何理解？是没有域名吗？还是怎样？IP是如何分配的 -->
+<!-- 这个如何理解？是没有域名吗？还是怎样？IP是如何分配的，这个应该不算是HTTP的问题吧 -->
 
 ## 1.1 - 长连接
 
@@ -166,3 +158,11 @@ HTTP/1.1 长连接的队头阻塞问题，是因为在一个 TCP 连接中 HTTP 
 头部压缩：HTTP/2.0 对请求头和响应头进行了压缩。
 
 ### HTTP 3.0
+
+## 其他
+
+很多重要的字段在 HTTP/1.0 也已经定义，如
+
+- User-Agent 和 Server 表明客户端和服务器的一些信息
+- Location 告诉客户端在某种情况下的下一步操作
+- Pragma，Cache(If-Modified-Since，Expires) 等利用缓存节约流量

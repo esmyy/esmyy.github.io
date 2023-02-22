@@ -323,3 +323,97 @@ timer2;
  -->
 
 <!-- promise 并不局限于接口请求，EventLoop 的综合应用 -->
+
+# 深入 Promise 原理
+
+把握本质 —— [Promise](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise) 是个构造函数。
+根据使用经验，Promise 的梳理过程
+
+```mermaid
+  flowchart LR
+  A(实例化过程) --> B(实例方法) --> C(静态方法)
+```
+
+:::note 说明
+本文假设的前提是对于 Promise 的使用已经比较熟练，常用的 API 等都知道，在这个基础上尝试去深入理解，理解 Promise 的实现。
+:::
+
+## 基本使用
+
+首先看一下基本的使用
+
+```js
+// 1. Promise 是一个构造函数
+new Promise(executor);
+
+// 2. executor 接受两个参数作为回调
+new Promise((resolve, reject) => {
+  resolve(1);
+});
+
+// 3. Promise 支持链式调用 then, catch, finally 等实例方法
+new Promise((resolve, reject) => {
+  resolve(1);
+})
+  .then((data) => {
+    // ...
+  })
+  .catch((e) => {
+    // ...
+  })
+  .finally(() => {});
+```
+
+推断 Promise 具有以下结构
+
+```js
+class MyyPromise {
+  constructor(executor) {
+    executor(resolve, reject);
+  }
+}
+```
+
+先是执行器函数的执行，然后是根据状态执行 then 或者 catch 注册的回调。所以下一步需要研究 resolve 和 reject 的实现，then 等实例方法的实现。根据使用经验，先把这几个函数基本结构填充一下
+
+##### resolve & reject
+
+resolve 和 reject 是函数，但不是实例属性。考虑到聚合，可以把 resolve, reject 设置到原型上，但不对外暴露。同时为了方便理解，使用支持属性修饰符的 TS 来表示
+
+```ts
+class MyyPromise {
+  constructor(executor) {
+    executor(resolve, reject);
+  }
+
+  private resolve(value) {}
+
+  private reject(reason) {}
+}
+```
+
+##### 实例方法
+
+根据 then, catch, finally 的调用方式，可以填充其参数结构
+
+```ts
+class MyyPromise {
+  constructor(executor) {
+    executor(resolve, reject);
+  }
+
+  private resolve(value) {}
+
+  private reject(reason) {}
+}
+```
+
+## 实例方法
+
+then, catch, finally 很直观的功能的注册回调，回调的
+
+### then
+
+<!-- 与事件循环 -->
+
+## 状态管理

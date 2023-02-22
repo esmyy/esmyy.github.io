@@ -15,15 +15,9 @@ console.log(typeof exports); // object
 console.log(typeof require); // function
 ```
 
-这几个关键字，本质都是对象，对象无非就是方法，属性这些内容。把握这个本质，对于理解有比较大的帮助。
+把握本质 —— 这几个关键字，都是对象。对象无非就是方法，属性这些内容。
 
-## 环境说明
-
-| 环境    | 说明     |
-| ------- | -------- |
-| Node.js | v16.19.0 |
-
-## 基本用法
+## 用例说明
 
 在 CommonJS 中，每个文件是一个单独的模块，可以有自己独立的内容，使用 require 导入其他模块，使用 module.exports 导出自身的内容。如下定义了一个 main --> a --> b 的引用关系
 
@@ -48,9 +42,10 @@ module.exports = {
 
 如无特别说明，后续的介绍将基于这个关系进行。
 
-## 模块解析
+## 模块解析过程
 
-在每个模块中都可以通过赋值 module.exports 来导出当前模块的内容。这意味着 module 是一个局部变量，如果 module 是模块之间共享的全局变量，是不能这样覆盖的 exports 属性的。比如，process 是一个全局变量
+在每个模块中都可以通过 module.exports 来导出当前模块的内容，这意味着 module 是一个局部变量。
+如果 module 是模块之间共享的全局变量，是不能这样覆盖 exports 属性的，比如，process 是一个全局变量
 
 ```js
 // main.js
@@ -288,7 +283,11 @@ function makeRequireFunction(mod, redirects) {
 
 在每个模块中，require 是不一样的，但是 main，extensions 和 cache 等属性是共享的。
 
-## module
+## API
+
+关键变量的简要说明
+
+### module
 
 module 是 Module 的实例，每个模块里面都有一个 module 对象，代表当前模块。
 可以直接断点或者打印 module 对象，查看其具体内容。如下，在 main.js 添加打印
@@ -368,9 +367,10 @@ console.log(module);
 };
 ```
 
-module 对象清晰简洁地描述了模块的内容，并且通过 children 维护了模块间的引用关系。有了 Module 这样的一个构造函数/类型，现在可以抛开文件的概念，从对象的角度去看待每一个模块。
+module 对象清晰简洁地描述了模块的内容，并且通过 children 维护了模块间的引用关系。
+有了 Module 这样的一个构造函数/类型，现在可以抛开文件的概念，从对象的角度去看待每一个模块。
 
-## require
+### require
 
 `require` 导入的内容可以分成 3 类
 
@@ -467,3 +467,5 @@ JS 的发展，是先继承再发展，不是抛掉过去狂奔，总是离不�
   <summary>动态加载了解一下？</summary>
   <div>动态不等于异步，反而是表现的同步的特点。CommonJS 中，require 调用或者 exports 的设置是同步的，不同地方require，虽然引用是一样的，但是对象的属性可能还没设置上。动态加载就是尽量慎用，然后保持require在顶部，exports 在底部是一个好的实践。</div>
 </details>
+
+<!-- 动态加载了解一下 -->
