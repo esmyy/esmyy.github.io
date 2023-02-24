@@ -41,8 +41,8 @@ chrome://net-internals/#dns
 
 ![dns log viewer](../assets/dns-log.jpg)
 
-浏览器中的 TTL 是毫秒数，表示浏览器缓存的有效时间，与 Expires 有对应关系。域名的 TTL 在权威 DNS 配置，本地 DNS 会缓存记录，
-浏览器查到的 DNS 记录一般是本地 DNS 提供的
+浏览器中的 TTL 是毫秒数，表示浏览器缓存的有效时间，与 Expires 有对应关系。域名的 TTL 在权威 DNS 配置，LocalDNS 会缓存记录，
+浏览器查到的 DNS 记录一般是 LocalDNS 提供的
 
 ```text
 浏览器里面的 TTL = 权威 NS 配置的 TTL - 本地 NS 已经缓存的时间
@@ -73,8 +73,8 @@ sudo killall -HUP mDNSResponder
   flowchart LR
 
   subgraph "递归查询就是 A - B - C - X... 这样的过程"
-    host(请求主机)
-    local(本地NS)
+    host(Client)
+    local(LocalDNS)
     host --1--> local
     local --8--> host
   end
@@ -82,10 +82,10 @@ sudo killall -HUP mDNSResponder
   local --- local2
 
   subgraph "迭代查询：B - C, B - D, B - X..."
-    local2(本地NS)
-    root(根NS)
-    top(顶级域NS)
-    auth(权威NS)
+    local2(LocalDNS)
+    root(RootDNS)
+    top(TopDNS)
+    auth(AuthDNS)
     local2 --2--> root
     root --3--> local2
     local2 --4--> top
@@ -97,7 +97,7 @@ sudo killall -HUP mDNSResponder
 
 #### 本地 NS
 
-通过 DHCP 接入网络时，会将本地 NS 的地址下发的局域网 NS 地址，在 MacOS 中会缓存到 `/etc/resolv.conf` 中
+通过 DHCP 接入网络时，会将 LocalDNS 的地址下发到接入设备，在 MacOS/Linux 中会缓存到 `/etc/resolv.conf` 中
 
 ```text
 #
@@ -119,7 +119,9 @@ nameserver 172.16.1.21
 nameserver 172.16.1.22
 ```
 
-将本地 NS 理解为运营商就可以了，毕竟即使中间还有局域网路由器，也是要转发到运营商。大部分的情况，都可以在本地 DNS 找到缓存记录。
+一般我们看到的是本地局域网的一个网关地址，但最终都是转发到运营商的，所以将 LocalDNS 理解为运营商的 DNS 就可以了。
+
+大部分的情况下，都可以在 LocalDNS 找到缓存记录，并不会很频繁地继续走递归和迭代查询的过程。
 
 <details>
   <summary>本地NS如何知道根NS的地址？好像并没有人告诉它呀</summary>
@@ -204,19 +206,50 @@ www.baidu.com.  1200 IN CNAME www.a.shifen.com.
 # 权威DNS返回了ip地址
 ```
 
-## DNS 的问题
+## LocalDNS 的问题
 
-有 DNS 的地方就有缓存，缓存就会有更新的时效性问题
+有 DNS 的地方就有缓存，有缓存的地方就需要考虑到刷新，同步这些内容。
+
+不论是完整的向外查询的解析路径，还是缓存返回，LocalDNS 都是关键节点，也是问题多发区域。
+
+### 域名缓存问题
+
+缓存是 DNS 的一大特点，有 DNS 的地方就有缓存，有缓存的地方就必然会有刷新，同步这些问题。
+
+但是不能只是说 **因为 LocalDNS 缓存了域名解析结果，直接返回给了客户端**，这就是问题。
+
+我的理解，LocalDNS 的缓存，是在使用 DNS 时就可以预见的必然的
+
+这只是 DNS 解析过程的一大特点。
+
+我理解的 DNS 域名缓存问题，有几个方面
+
+-
+
+内容缓存：运营商为了减少跨网流量及控制用户访问速度，在本地缓存页面到内容服务器，一种很可能有副作用的
+
+:::info 说明
+有些文章会把”运营商缓存静态页面到内容服务器，把 DNS 解析结果指向自己的内容服务器“的问题称作 ”域名缓存问题“，
+我认为那样表达很不清晰，域名劫持就很形象。
+
+DNS 正常的缓存就是域名缓存，代表的是不继续查找而是直接返回缓存了的 IP 地址，这个 IP 地址是缓存下来的，而不是自己伪造的。
+:::
+
+有 DNS 的地方就有缓存，缓存就会有更新的时效性问题，典型的是双机房部署，当一个机房出现问题，需要更新 DNS 指向可用的机房，这个时候就需要刷新 DNS。
+
+### 域名劫持
+
+域名劫持就是经过人家门口问路，结果人家不讲武德，给你指了一条错路，空路，或者给你带到奇奇怪怪的地方去。
 
 ## 特别的 NS
 
 ### HttpDNS
 
-传统的 DNS 解析，在数据缓存更新，域名转发，域名更新(如机房切换)等存在一些问题。HTTP DNS，就是不走传统 DNS，自己搭建基于 HTTP 的 NS 集群。一般 HttpDNS 用于手机端应用，使用 SDK 加载缓存 HttpDNS Server 的 IP 列表，通过 HTTP 绕过传统 DNS 获得 IP。
+传统的 DNS 解析，在数据缓存更新，域名转发(如跨运营商转发)，域名更新(如机房切换)等存在一些问题。HttpDNS，就是不走传统 DNS，自己搭建基于 HTTP 的 NS 集群。一般 HttpDNS 用于手机端应用，使用 SDK 加载缓存 HttpDNS Server 的 IP 列表，通过 HTTP 绕过传统 DNS 获得 IP。
 
 ### CdnDNS
 
-CDN 一般会在权威 NS 中设置 CNAME，当访问某个域名，返回的不再是源站的 IP 地址，而是返回一个 CDN 域名，本地 NS 拿到这个域名之后，去访问 CDN 自己搭建的权威 NS ，这个 NS 再次返回负载均衡器的 CNAME，本地 DNS 再次请求负载均衡器即可得到缓存服务器的 IP。在获取到缓存服务器的 IP 之后，再依次访问边缘节点，区域节点，中心节点，最后回源。
+CDN 一般会在权威 NS 中设置 CNAME，当访问某个域名，返回的不再是源站的 IP 地址，而是返回一个 CDN 域名，本地 NS 拿到这个域名之后，去访问 CDN 自己搭建的权威 NS ，这个 NS 再次返回负载均衡器的 CNAME，LocalDNS 再次请求负载均衡器即可得到缓存服务器的 IP。在获取到缓存服务器的 IP 之后，再依次访问边缘节点，区域节点，中心节点，最后回源。
 
 ![DNS](../assets/cdn-dns.jpg)
 
@@ -241,6 +274,8 @@ CDN 一般会在权威 NS 中设置 CNAME，当访问某个域名，返回的不
 <!-- 根NS的数据是同步的吗？如何知道某个域名已经被注册 -->
 
 <!-- 本地dns为何不缓存顶级DNS？ -->
+
+<!-- 跨运营商访问的问题 -->
 
 <!-- 114.114.114.114、8.8.8.8 -->
 <!-- 添加解析记录后多久生效？
