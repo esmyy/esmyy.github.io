@@ -67,13 +67,7 @@ ping baidu.com -c 2
 
 traceroute 使用 UDP 协议，指定一个不可达端口，每次依次发送的报文 TTL 从 1 递增，链路上各个路由器由于 TTL 超时，返回一个 ICMP 消息通知源主机
 
-![traceroute](../assets/traceroute.jpg)
-
-## 总结
-
-ping 和 traceroute 都是使用的 ICMP 协议。traceroute 基于 UDP，通过设置 TTL，中间路由在解析发现超时之后向源主机发送 ICMP 差错报文。
-
-## Q & A
+<MyImg src={require("../assets/traceroute.jpg")} width="600px" />
 
 <!--
 虽然是叫做 ICMP，但是其实是 M，然后 C，是接收到消息，然后进行相应的控制处理。 -->

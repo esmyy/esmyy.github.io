@@ -274,10 +274,6 @@ www.baidu.com.  1200 IN CNAME www.a.shifen.com.
 
 <!-- https://help.aliyun.com/document_detail/39799.html -->
 
-## 小结
-
-归根结底，就是 LocalDNS 缓存需要在更新。对于容灾的双机房部署时，域名解析切换的时候，如何
-
 ## Q & A
 
 <details>

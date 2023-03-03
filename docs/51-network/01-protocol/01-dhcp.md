@@ -81,8 +81,3 @@
 当本机网络断开，重新连接到网络，由于本机缓存了之前使用的 IP，会跳过 Discover 和 Offer，再次广播 Request 请求。
 
 至于续租，这是客户端的行为，在租期过去一段时间后，请求续租，这个也是直接发起 Request 请求。
-
-<details>
-  <summary>本机IP存储在哪里？</summary>
-  <div></div>
-</details>
