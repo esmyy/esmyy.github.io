@@ -10,7 +10,7 @@ CDN 有两个核心组成，全局负载均衡(GSLB)和缓存系统。
 
 GSLB 是 CDN 的大脑，负责智能调度，根据请求携带的信息，综合分析返回”最近“的缓存服务器的地址。
 
-![DNS](../assets/cdn-dns.jpg)
+![DNS](./assets/cdn-dns.jpg)
 
 如图中 1-8 步骤所示，CDN 一般会在权威 DNS 中设置 CNAME，当访问某个域名，返回的不再是源站的 IP 地址，而是返回一个 CDN 域名。
 LocalDNS 访问 CDN 自己搭建的权威 NS，这个 NS 再次返回负载均衡器的 CNAME，LocalDNS 向 GSLB 请求，GSLB 返回缓存服务器的 IP。
@@ -23,7 +23,7 @@ LocalDNS 访问 CDN 自己搭建的权威 NS，这个 NS 再次返回负载均�
 
 GSLB 是告诉你去哪里找，而缓存系统决定了你到了地方之后，能不能找到，容不容易找到。
 
-![DNS](../assets/cdn-dns.jpg)
+![DNS](./assets/cdn-dns.jpg)
 
 如图中 9 开始的步骤所示，源主机获取到边缘的缓存服务器的 IP 之后发起请求，CDN 缓存系统会依次尝试从边缘节点，区域节点，中心节点提取匹配的缓存，实在找不到，最后只能回源。
 
