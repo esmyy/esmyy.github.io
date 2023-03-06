@@ -66,8 +66,6 @@ CDN 的刷新，也可以叫做删除，根据实际需要，可以先刷新后�
 缓存这块，需要结合源站(Nginx), HTTP，CDN 三者的相关知识进行理解，是比较考验综合理解能力的。
 :::
 
-<!-- https://help.aliyun.com/document_detail/449472.html -->
-
 ## Q & A
 
 参考 [阿里云 CDN 常见问题](https://help.aliyun.com/document_detail/147730.html)
