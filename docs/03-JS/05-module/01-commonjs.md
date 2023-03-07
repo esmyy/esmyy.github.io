@@ -15,7 +15,7 @@ console.log(typeof exports); // object
 console.log(typeof require); // function
 ```
 
-把握本质 —— 这几个关键字，都是对象。对象无非就是方法，属性这些内容。
+把握本质 —— 这几个关键字，都是对象，对象无非就是方法，属性这些内容。
 
 ## 用例说明
 
@@ -45,7 +45,7 @@ module.exports = {
 ## 模块解析过程
 
 在每个模块中都可以通过 module.exports 来导出当前模块的内容，这意味着 module 是一个局部变量。
-如果 module 是模块之间共享的全局变量，是不能这样覆盖 exports 属性的，比如，process 是一个全局变量
+如果 module 是模块之间共享的全局变量，是不能这样覆盖 exports 属性的。比如，process 是一个全局变量
 
 ```js
 // main.js
@@ -120,7 +120,8 @@ Module._load = function (request, parent, isMain) {
 Module._load("main.js", null, true);
 ```
 
-这一步的作用是在解析每个模块的具体内容之前，为每个模块生成一个描述对象 module，这个 module 就是在每个模块中直接使用的那个关键变量。每个模块都可以用这样一个对象去描述， 对应的 Module 构造函数如下
+这一步的作用是在解析每个模块的具体内容之前，为每个模块生成一个描述对象 module，这个 module 就是在每个模块中直接使用的那个关键变量。
+每个模块都可以用这样一个对象去描述，对应的 Module 构造函数如下
 
 ```js
 function Module(id = "", parent) {
@@ -144,7 +145,7 @@ function Module(id = "", parent) {
 
 ### 读取原始内容
 
-load 函数就是 module 具体属性值的设置，其中关键的是根据拓展名调用对应的 handler 函数去执行具体内容的加载过程。
+load 函数就是 module 具体属性值的设置
 
 ```js
 Module.prototype.load = function (filename) {
@@ -152,13 +153,16 @@ Module.prototype.load = function (filename) {
   this.paths = Module._nodeModulePaths(path.dirname(filename));
 
   // 找出拓展名，比如 main.js 是 .js
+  // highlight-next-line
   const extension = findLongestRegisteredExtension(filename);
+  // highlight-next-line
   Module._extensions[extension](this, filename);
+
   this.loaded = true;
 };
 ```
 
-注意 `module.loaded` 是整个模块转换完成以后，才会设置为 true。
+其中关键的是根据拓展名调用对应的 handler 函数去执行具体内容的加载过程。
 以 .js 为例说明，处理如下
 
 ```js
@@ -179,7 +183,7 @@ Module._extensions[".js"] = function (module, filename) {
 };
 ```
 
-拓展名处理函数，就是根据拓展名读取模块的 content。
+拓展名处理函数，就是根据拓展名读取模块的 content。这里注意 `module.loaded` 是整个模块转换完成以后，才会设置为 true。
 
 ### 生成导出对象
 
@@ -210,7 +214,9 @@ Module.prototype._compile = function compiler(content, filename) {
 ```
 
 这个 `_compile` 是理解 CommonJS 的关键中的关键。
-在这里对模块本身的内容进行了一个包装，生成一个模块创建函数 compiledWrapper，然后生成模块所需的 exports, require 等参数，调用 compiledWrapper 完成了模块的解析。compiledWrapper 包装实现过程有些复杂，但基本的逻辑是简单的，可以看做下面这个简单包装
+在这里对模块本身的内容进行了一个包装，生成一个模块创建函数 compiledWrapper，然后生成模块所需的 exports, require 等参数，调用 compiledWrapper 完成了模块的解析。
+
+compiledWrapper 包装实现过程有些复杂，但基本的逻辑是简单的，可以看做下面这个简单包装
 
 ```js
 /**
@@ -240,54 +246,9 @@ function compile() {
 }
 ```
 
-回想一下设置模块导出的过程，\_compile 函数执行完成之后，`module.exports` 就包含了模块导出的内容，最终所有模块的内容，都可以通过 main.js 的 module 访问到。
+\_compile 函数执行完成之后，`module.exports` 就包含了模块导出的内容。
 
-### require 实现
-
-`require` 本身是一个函数，实现如下
-
-```js
-const require = makeRequireFunction(module, redirects);
-
-function makeRequireFunction(mod, redirects) {
-  const Module = mod.constructor;
-
-  let require = function require(path) {
-    return mod.require(path);
-  };
-
-  // 模块路径处理
-  function resolve(request, options) {
-    validateString(request, "request");
-    return Module._resolveFilename(request, mod, false, options);
-  }
-
-  require.resolve = resolve;
-
-  // 通过 paths 查找模块
-  function paths(request) {
-    validateString(request, "request");
-    return Module._resolveLookupPaths(request, mod);
-  }
-
-  resolve.paths = paths;
-
-  // 不同模块的 require 参数中，这些属性都是一样的
-  setOwnProperty(require, "main", process.mainModule);
-  require.extensions = Module._extensions;
-  require.cache = Module._cache;
-
-  return require;
-}
-```
-
-在每个模块中，require 是不一样的，但是 main，extensions 和 cache 等属性是共享的。
-
-## API
-
-关键变量的简要说明
-
-### module
+## module
 
 module 是 Module 的实例，每个模块里面都有一个 module 对象，代表当前模块。
 可以直接断点或者打印 module 对象，查看其具体内容。如下，在 main.js 添加打印
@@ -370,7 +331,91 @@ console.log(module);
 module 对象清晰简洁地描述了模块的内容，并且通过 children 维护了模块间的引用关系。
 有了 Module 这样的一个构造函数/类型，现在可以抛开文件的概念，从对象的角度去看待每一个模块。
 
-### require
+<!-- 由于 children 关系的存在，最终所有被使用模块的内容，都可以通过 main.js 的 module 访问到。 -->
+
+## exports
+
+exports 是 module.exports 的引用，最终外部能够引用是的 module 对象
+
+```js
+exports = module.exports;
+```
+
+对 exports 赋值是没有用的，也就是不能直接赋值做默认导出，把 exports 当做 ES Module 的具名变量导出即可。
+
+```js
+exports.a = "a";
+exports.foo = {};
+```
+
+最简单的，就是 exports 使用时，始终是 `exports.xxx` 属性设置即可。
+
+## require
+
+`require` 本身是一个函数
+
+### 实现过程
+
+require 本身是一个函数，从我们使用上来说，很明显返回的结果显然应该是模块的引用。require 是每个模块中的变量，不是对外导出的内容，
+在每个模块中，require 是不一样的，是在模块解析过程中定义的
+
+```js
+const require = makeRequireFunction(module, redirects);
+
+function makeRequireFunction(mod, redirects) {
+  const Module = mod.constructor;
+
+  let require = function require(path) {
+    return mod.require(path);
+  };
+
+  // 模块路径处理
+  function resolve(request, options) {
+    validateString(request, "request");
+    return Module._resolveFilename(request, mod, false, options);
+  }
+
+  require.resolve = resolve;
+
+  // 通过 paths 查找模块
+  function paths(request) {
+    validateString(request, "request");
+    return Module._resolveLookupPaths(request, mod);
+  }
+
+  resolve.paths = paths;
+
+  // 不同模块的 require 参数中，这些属性都是一样的
+  setOwnProperty(require, "main", process.mainModule);
+  require.extensions = Module._extensions;
+  require.cache = Module._cache;
+
+  return require;
+}
+```
+
+`cache` 等属性是共享的对象引用，并不是每个模块私有的，这是避免循环导入，重复导入的关键。而 `resolve`和 `paths`这些工具函数，其实处理的都是和当前模块相关的计算。模块内的 require 都是基于 Module.prototype.require 的拓展
+
+```js
+// Loads a module at the given file path. Returns that module's
+// `exports` property.
+Module.prototype.require = function (id) {
+  validateString(id, "id");
+  if (id === "") {
+    throw new ERR_INVALID_ARG_VALUE("id", id, "must be a non-empty string");
+  }
+  requireDepth++;
+  try {
+    return Module._load(id, this, /* isMain */ false);
+  } finally {
+    requireDepth--;
+  }
+};
+```
+
+Module.\_load 返回的是被导入模块的 module.exports 对象。
+
+### 模块分类
 
 `require` 导入的内容可以分成 3 类
 
@@ -430,10 +475,10 @@ console.log(require("node:fs") === fakeFs); // false
 }
 ```
 
-## 总结与体会
+## 小结
 
 可以将 CommonJS 的模块文件当做某种特定模板格式的文件，这种文件不被 JS 所支持，所以需要转换成某种被支持的形式。
-CommonJS 巧妙地将 require， exports 实现为 JS 已经支持的对象，把模块生成过程转换为了一个函数执行的过程，理解起来很顺畅。了解了 CommonJS 模块的实现之后，再回头看，发现和 IIFE 本质是相通的。
+CommonJS 巧妙地将 require， exports 实现为 JS 已经支持的对象，把模块生成过程转换为了一个函数执行的过程。CommonJS 模块的实现和 IIFE 本质是相通的。
 
 ```js
 (function (exports, require, module, __filename, __dirname) {
@@ -446,7 +491,8 @@ CommonJS 巧妙地将 require， exports 实现为 JS 已经支持的对象，�
 })(exports, require, module, __filename, __dirname);
 ```
 
-JS 的发展，是先继承再发展，不是抛掉过去狂奔，总是离不开执行上下文和作用域这些核心的特点的。
+模块解析的结果是一个 Module 对象，统一缓存在 Module.\_cache 当中，这是 CommonJS 内部的应用。
+require 返回的是 module.exports 对象，这是每个模块对外使用的对象。
 
 ## Q & A
 
@@ -464,8 +510,6 @@ JS 的发展，是先继承再发展，不是抛掉过去狂奔，总是离不�
 </details>
 
 <details>
-  <summary>动态加载了解一下？</summary>
+  <summary>CommonJS 动态加载了解一下？</summary>
   <div>动态不等于异步，反而是表现的同步的特点。CommonJS 中，require 调用或者 exports 的设置是同步的，不同地方require，虽然引用是一样的，但是对象的属性可能还没设置上。动态加载就是尽量慎用，然后保持require在顶部，exports 在底部是一个好的实践。</div>
 </details>
-
-<!-- 动态加载了解一下 -->
