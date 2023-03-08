@@ -1,19 +1,8 @@
-# 编译过程
+# 工作流程
 
-webpack 的编译过程是一个基于 [Tapable](https://github.com/webpack/tapable) 的事件流，简单来说，就是在 webpack 处理的每个关键节点，都定义了相应的事件，在使用时，可以通过 Tapable 提前注册事件处理函数，在处理到对应的节点时，就会调用已经注册的处理函数。
+Webpack 的工作流程可以理解为一个事件流机制，每一个事件上可以注册事件处理函数，注册处理函数的方式是插件。
 
-```mermaid
-gitGraph
-  commit id:"开始编译"
-  commit
-  commit
-  commit id:"......"
-  commit
-  commit
-  commit id:"编译结束"
-```
-
-Tapable 类似于 EventEmitter，或者更简单的 [mitt](https://github.com/developit/mitt)，是一个事件发布/订阅的工具。示例如下
+Webpack 的事件流基于 [Tapable](https://github.com/webpack/tapable) 实现。Tapable 类似于 EventEmitter，或者更简单的 [mitt](https://github.com/developit/mitt)，是一个事件发布/订阅的工具。一个简单示例如下
 
 ```js
 const { SyncHook } = require("tapable");
@@ -22,7 +11,13 @@ const { SyncHook } = require("tapable");
 class Car {
   constructor() {
     this.hooks = {
+      accelerate: new SyncHook(["newSpeed"]),
       brake: new SyncHook(),
+      calculateRoutes: new AsyncParallelHook([
+        "source",
+        "target",
+        "routesList",
+      ]),
     };
   }
 }
@@ -36,44 +31,45 @@ myCar.hooks.brake.tap("test", () => console.log("test"));
 myCar.hooks.brake.call();
 ```
 
-特别的是，webpack 中注册处理函数的方式是插件，因此，webpack 中的插件可以理解为事件处理函数。
+提供了方法进行事件订阅，事件发布，通过定义 hooks 属性，Car 的实例具备了消息发布/订阅的能力。
 
-:::info 🤔
-首先有这样一个印象，webpack 函数处理文件时，从输入到输出的执行过程，就是一个事件流，在各个节点抛出事件，执行通过插件注册的处理函数。
-:::
+本文跳过入口查找的过程，直接从 Webpack 的实例化开始。如果把 Webpack 当做一个类似于 Vue 这样的构造函数，大概可以认为
 
-## 编译器初始化
+```js
+compiler = new Webpack(options);
+```
 
-webpack 定义，省略了暂时不必关注的内容，过程如下
+虽不中，亦不远矣。compiler 是 Webpack 中的两个核心对象之一，负责整个构建过程的调度和状态维护。另一个核心对象是 compilation，表示编译，负责一次具体的编译过程。 如果用 Node 服务做个对比，compiler 就像 node process，而 compilation 只是一次请求的处理过程，是 ctx。Webpack 的工作流程，就围绕着这两个对象展开
 
-```js title="lib/webpack.js"
+### 1. create compiler
+
+webpack 定义在 lib/webpack.js
+
+```js
 const webpack = (options, callback) => {
-  // 创建编译器
   let compiler = createCompiler(options);
-
   // ...
-
-  // 执行编译
-  compiler.run();
-
   return compiler;
 };
 ```
 
-通过对 Webpack CLI 的过程的理解，可以知道这里的 options 就是编译配置，理解为一个 `webpack.config.js` 配置即可，callback 暂不用关注。
+createCompiler
 
 ```js
 const createCompiler = (options) => {
-  // 1. 设置默认配置，并与options的配置合并，初始化 compiler
+  // 设置默认值，比如说如果没配置 options.target，就设置 options.target 为 web
   options = new WebpackOptionsDefaulter().process(options);
+
+  // 初始化 compiler
   const compiler = new Compiler(options.context);
   compiler.options = options;
 
-  // 2. 安装插件
+  // 内置插件实例化并调用
   new NodeEnvironmentPlugin({
     infrastructureLogging: options.infrastructureLogging,
   }).apply(compiler);
 
+  // plugins 调用
   if (Array.isArray(options.plugins)) {
     for (const plugin of options.plugins) {
       if (typeof plugin === "function") {
@@ -84,36 +80,32 @@ const createCompiler = (options) => {
     }
   }
 
-  // 3. 发布环境状态事件
+  // 发布环境状态事件
   compiler.hooks.environment.call();
   compiler.hooks.afterEnvironment.call();
 
-  // 4. 根据 options 设置插件
+  // 根据 options 设置插件
   compiler.options = new WebpackOptionsApply().process(options, compiler);
   return compiler;
 };
 ```
 
 这里的内容很多，已经在代码中做了简要注释。理解 hooks 和 plugin 相关的初始化，对于理解 Webpack 工作流程至关重要。
+
+- 实例化 Compiler
+- 执行 plugins
+- 发布环境事件
+- 根据 options 设置插件
+
 逐步来看其中的内容
 
-### 创建 compiler
-
-compiler 是 webpack 编译的引擎，负责整体调度。
+#### 实例化 Compiler
 
 ```js
 compiler = new Compiler(options.context);
-compiler.options = options;
 ```
 
-`options.context` 是执行时指定的配置文件所在的目录，如下就是 config 目录的路径。
-
-```shell
-config
-└── webpack.config.js
-```
-
-Compiler 的定义 如下
+来看一下 Compiler 的定义
 
 ```js
 const {
@@ -128,7 +120,6 @@ class Compiler {
    * @param {string} context the compilation path
    */
   constructor(context) {
-    // 定义钩子
     this.hooks = Object.freeze({
       shouldEmit: new SyncBailHook(["compilation"]),
       done: new AsyncSeriesHook(["stats"]),
@@ -149,21 +140,36 @@ class Compiler {
       // ...省略其他 hooks 定义
     });
 
-    this.context = context;
-    this.options = /** @type {WebpackOptions} */ ({});
-
     // ...一堆属性初始化
   }
 
-  // ...实例化过程不调用其他方法，暂不用关注
+  watch(watchOptions, handler) {
+    // ...
+  }
+
+  run(callback) {
+    // ...
+  }
+
+  // ...
+
+  compile(callback) {
+    // ...
+  }
+
+  close(callback) {
+    this.cache.shutdown(callback);
+  }
 }
 ```
 
-`compiler.hooks` 定义了 compiler 所支持的所有事件，具体可参考[Compiler Hooks](https://webpack.js.org/api/compiler-hooks/)，由此 compiler 具备了事件发布/订阅的能力。compiler 执行过程中在对应的节点会发布相应的事件，触发已注册的处理函数执行。
+构造函数中 `context` 参数是编译路径，比如`/abs/path/to/webpack-demo`。 compiler.hooks 使用 tapable 导出的工具函数进行了众多事件的定义，由此 compiler 具备了事件发布/订阅的能力。
 
-### 插件安装
+总之 `new Compiler`，就是使用 tapable 给 compiler 实例定义了诸多编译器执行相关的事件。
 
-👨‍💻‍ Go On... 👨‍💻‍
+#### 执行 plugins
+
+👨‍💻‍ Go On... 👨‍💻‍ 下面这两块内容，都是插件的调用
 
 ```js
 const createCompiler = (options) => {
@@ -186,7 +192,7 @@ const createCompiler = (options) => {
 };
 ```
 
-插件具有统一的结构，都是通过 apply 函数进行安装，而且 apply 的参数都是 compiler，这个函数的主要作用是注册编译过程的事件处理函数，也可以在 compiler 上定义一些属性。以这里的 NodeEnvironmentPlugin 为例，它最终是给 beforeRun 添加一个订阅函数。
+插件的调用其实就是注册事件处理函数，不管是 NodeEnvironmentPlugin 还是 options.plugins 里面传入的插件，都是一样的。 以这里的 NodeEnvironmentPlugin 为例
 
 ```js
 class NodeEnvironmentPlugin {
@@ -195,21 +201,19 @@ class NodeEnvironmentPlugin {
   }
 
   apply(compiler) {
-    // ...省略
+    // ...
     compiler.hooks.beforeRun.tap("NodeEnvironmentPlugin", (compiler) => {
-      // ...
+      if (compiler.inputFileSystem === inputFileSystem) {
+        inputFileSystem.purge();
+      }
     });
   }
 }
 ```
 
-具体的插件机制，一些插件的重要能力，这里暂且不提，NodeEnvironmentPlugin 其实有很多重要作用，这里都暂且不提。
+前面 new Compiler 定义了 beforeRun 事件，这里就是给 beforeRun 添加一个订阅函数而已。
 
-:::info 🤔
-在 compiler 初始化之后是执行插件的安装，插件的安装是订阅编译过程中的事件。
-:::
-
-### 发布环境事件
+#### 发布环境事件
 
 👨‍💻‍ Go On... 👨‍💻‍ 在定义了事件，也添加了一些订阅事件之后，是内置的环境相关事件的发布，如下
 
@@ -225,17 +229,17 @@ const createCompiler = (options) => {
 };
 ```
 
-这就表示环境已经准备好了。这里有点不太理解的地方，为什么不是最后再发布环境事件，而要在 compiler.options 设置之前呢？不过这个细节或许也不太重要。
+#### 根据 options 设置插件
 
-### options 插件安装
-
-最后是根据传递的 options，去安装内置插件
+创建编译器的最后是根据传递的 options，或者说我们编写的 webpack.config.js 中的配置，去设置插件。如下
 
 ```js
-compiler.options = new WebpackOptionsApply().process(options, compiler);
+const createCompiler = (options) => {
+  compiler.options = new WebpackOptionsApply().process(options, compiler);
+};
 ```
 
-这个初始化负责将 options 参数，转换为 Webpack 内部插件来处理，部分内容如下
+这是一个重要的初始化，它负责将 options 参数，转换为 Webpack 内部插件来处理，部分内容如下
 
 ```js
 class WebpackOptionsApply extends OptionsApply {
@@ -263,53 +267,76 @@ class WebpackOptionsApply extends OptionsApply {
 }
 ```
 
-以上只展示了原代码的一小部分内容。概括来说，这就是根据 options 中的配置，引入一个个内部提供的插件进行处理。基本上是下面这样的一个转换
+以上只展示了原代码的一小部分内容。概括来说，这就是根据 options 中的参数配置，引入一个个内部提供的插件进行处理。基本上是下面这样的一个转换
 
 ```js
-if (options.somePlugin) {
-  const Plugin = require('./relative/path/to/somePlugin')；
+if (options.someplugin) {
+  const Plugin = require('./relative/path/to/someplugin')；
   new Plugin().apply(compiler);
 }
 ```
 
-这一步将 webpack 插件的设计体现的淋漓尽致。
+总结来说，整个 compiler 初始化的过程，都围绕着 hooks 和 plugins，定义事件，订阅事件。 options 配置和插件是有对应关系的，会将参数配置转换为 plugin 去处理。
 
-:::info 🤔
-总结来说，compiler 初始化的过程，都围绕着 hooks 和 plugins 进行。
+### 2. run/watch
 
-- 定义事件：编译器支持那些事件
-- 订阅事件：通过配置的，内置的插件订阅了编译过程的事件
-- 发布事件：初始化本身也是编译过程的一部分，有一些事件节点
+创建了 compiler 之后，就是开始编译了
 
-让我觉得很受启发的，是 options 配置的各项转换为插件这个处理，很有意思。
-:::
-
-## 2. 准备开始
-
-创建 compiler 之后调用 `compiler.run` 开始执行编译，这个方法核心过程如下
-
-```js title="webpack/lib/Compiler.js"
-run(callback) {
+```js
+const webpack = (options, callback) => {
   // ...
+  compiler = createCompiler(options);
+  watch = options.watch;
+  watchOptions = options.watchOptions || {};
+  if (callback) {
+    if (watch) {
+      compiler.watch(watchOptions, callback);
+    } else {
+      compiler.run((err, stats) => {
+        compiler.close((err2) => {
+          callback(err || err2, stats);
+        });
+      });
+    }
+  }
+  return compiler;
+};
+```
 
-  this.hooks.beforeRun.callAsync(this, err => {
-    if (err) return finalCallback(err);
+判断是否是 watch 模式执行 compiler.watch 或者 compiler.run，watch 模式是 dev 相关的，研究 run 即可
 
-    this.hooks.run.callAsync(this, err => {
+```js
+class Compiler {
+  /**
+   * @param {string} context the compilation path
+   */
+  constructor(context) {
+    // ...
+  },
+  run(callback) {
+    // ...
+    this.cache.endIdle(err => {
       if (err) return finalCallback(err);
 
-      this.readRecords(err => {
+      this.hooks.beforeRun.callAsync(this, err => {
         if (err) return finalCallback(err);
 
-        this.compile(onCompiled);
+        this.hooks.run.callAsync(this, err => {
+          if (err) return finalCallback(err);
+
+          this.readRecords(err => {
+            if (err) return finalCallback(err);
+
+            this.compile(onCompiled);
+          });
+        });
       });
     });
-  });
+  }
 }
 ```
 
-从上面看，依次触发 `beforeRun`，`run` 两个事件，这两个事件的回调执行完成之后，最终调用 compile 函数。
-compile 表示一次编译，onCompiled 这个回调函数是编译完成之后执行的。
+从上面看，依次触发 `beforeRun`，`run` 两个事件，最终调用 compile 函数，compile 表示一次编译。onCompiled 这个回调函数是编译完成之后执行的。
 
 ```js
 compile(callback) {
@@ -354,12 +381,11 @@ compile(callback) {
 }
 ```
 
-以上依次触发了 beforeCompile, compile, make 事件，而 hooks.make 即开始编译。
-从调用 compiler.run 到 hooks.make，都只是在做准备工作，每个节点都通知一下，到了 make 这个位置，才是最后大哄一声 —— 现在真的要开始了。
+以上依次触发了 beforeCompile, compile, make，而 hooks.make 即开始编译。 从调用 compiler.run 到 hooks.make，基本上都只是在做各个细分事件的触发，有点像 DOM 事件的捕获的过程，每个节点都通知一下，走过千山万水，套路万千，到了 make 跟前，最后大哄一声 —— 现在老子真的要开始了。
 
-<!-- 具体的编译由 compilation，compilation 是编译最核心的过程，比较复杂，作为一个单独的环节去分析。 总之在这里 make 完成之后，表示文件已经进行了一次编译，之后是调用 compilation.finish 和 compilation.seal 去做一些收尾工作。 -->
+具体的编译由 compilation，compilation 是编译最核心的过程，比较复杂，作为一个单独的环节去分析。 总之在这里 make 完成之后，表示文件已经进行了一次编译，之后是调用 compilation.finish 和 compilation.seal 去做一些收尾工作。
 
-## 3. 具体编译
+### 3. compilation
 
 compilation 负责一次具体编译过程。具体的模块编译调度，compilation 根据 entry，使用 loader 对模块进行编译，生成 bundle。
 
@@ -527,7 +553,7 @@ app.bundle.js  4.31 KiB     app  [emitted]  app
 
 在 seal 阶段生成的 compilation.assets 对象，与我们最终打包出来的 Asset，只差临门一脚的输出。
 
-## 4. 文件输出
+### 4. emit
 
 compilation 执行完成之后，内存中已经有即将输出的文件了，保存在 compilation.assets，提取出来写到对应输出文件即可。
 

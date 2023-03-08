@@ -179,3 +179,7 @@ g.fullwidth {
 g.fullwidth rect {
   width: 100%;
 }
+
+.docusaurus-mermaid-container {
+  margin-bottom: 12px;
+}

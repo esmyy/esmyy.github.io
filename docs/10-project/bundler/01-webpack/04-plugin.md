@@ -52,4 +52,4 @@ module.exports = {
 
 插件将在 compiler 初始化的时候执行。
 
-#
+<!-- NodeEnvironmentPlugin -->
