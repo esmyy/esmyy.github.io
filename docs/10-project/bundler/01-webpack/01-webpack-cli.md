@@ -3,6 +3,8 @@
 > Webpack CLI provides the interface of options webpack uses in its configuration file. The CLI options override options passed in the configuration file.
 > The CLI provides a rich set of commands that helps you develop your application faster.
 
+## 入口
+
 如果使用 nvm 管理 Node，熟悉 nvm 的话，可以知道 webpack 命令在 node 的 bin 目录下，对应源码中的 `webpack/bin/webpack.js`
 
 ```js title="webpack/bin/webpack.js"
@@ -80,6 +82,11 @@ class WebpackCLI {
 }
 ```
 
+webpack-cli 是做命令分析，参数处理，负责处理一堆杂事，
+确保交给 webpack 函数一个包含必要属性的配置对象，最终还是调用 webpack 函数，webpack 函数负责具体的编译过程。
+
+## 示例
+
 以一个简单的配置为例
 
 ```js title="webpack.config.js"
@@ -117,32 +124,15 @@ module.exports = {
 }
 ```
 
-webpack-cli 是做命令分析，参数处理，负责处理一堆杂事，最终确保交给 webpack 函数一个标准的配置对象，webpack 函数负责具体的编译过程。
+像 entry,output 这些属性是是必须的。对于 WebpackCLI，它是做参数处理，最终确保传递给 webpack 一个包含必要属性的配置对象。
 
-:::info 🤔
-webpack 命令是间接调用 webpack-cli， webpack-cli 是编译前的 options 处理，最终需要都是调用 webpack 函数。
+## 小结
 
-webpack 命令不是必须的，可以直接调用 webpack-cli，webpack-cli 也不是必须的，可以直接调用 webpack 函数。
-:::
+webpack-cli 是编译前的 options 处理，然后调用 webpack 函数。
+两者不过是负责的环节分工而已，就像是大函数拆分一样。
 
-<!-- 也就是说，当我们执行 webpack 命令的时候，其实最终是调用 WebpackCLI 实例的 run 方法。
-
-```mermaid
-  flowchart LR
-  A(webpack/bin/webpack.js)
-``` -->
-
-<!--
-Webpack 实现中的两个核心对象是
-
-- compiler: 负责整体调度
-- compilation: 负责一次具体的编译过程，每次编译生成新的 compilation 对象
-  在流程上
-
-两个核心模块是
-
-- loader: 负责语法转换，文件转换等事情
-- plugin: 负责其他的事情
-
-创建编译器：事件的定义，参数处理转化为对应的 plugin，plugin 去订阅一些事件
-具体编译：创建 compilation 负责具体的编译过程，调用 loader-runner 对文件进行处 -->
+| 名称         | 作用                 |
+| ------------ | -------------------- |
+| webpack 命令 | 间接调用 webpack-cli |
+| webpack-cli  | options 处理         |
+| webpack 函数 | 编译                 |

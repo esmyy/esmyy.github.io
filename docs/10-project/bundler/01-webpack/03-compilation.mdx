@@ -1,0 +1,452 @@
+# compilation
+
+compilation 负责一次具体编译过程。首先看一下 Compilation 实例化的过程，做了些什么
+
+```js
+class Compilation {
+  constructor(compiler) {
+    const getNormalModuleLoader = () => deprecatedNormalModuleLoaderHook(this);
+    this.hooks = Object.freeze({
+      buildModule: new SyncHook(["module"]),
+      rebuildModule: new SyncHook(["module"]),
+      failedModule: new SyncHook(["module", "error"]),
+      succeedModule: new SyncHook(["module"]),
+      stillValidModule: new SyncHook(["module"]),
+      addEntry: new SyncHook(["entry", "name"]),
+      failedEntry: new SyncHook(["entry", "name", "error"]),
+      succeedEntry: new SyncHook(["entry", "name", "module"]),
+      // ...一堆事件定义
+    });
+
+    this.factorizeQueue = new AsyncQueue({
+      name: "factorize",
+      parallelism: options.parallelism || 100,
+      processor: this._factorizeModule.bind(this),
+    });
+
+    this.name = undefined;
+    this.compiler = compiler;
+    const options = compiler.options;
+    this.options = options;
+    this.profile = (options && options.profile) || false;
+    // ...一堆属性定义
+  }
+}
+```
+
+compilation 初始化的过程，与 compiler 类似，不同的在于，compilation 的事件是 module 级别的，针对于模块编译过程中的事件，而 compiler 的是 process 级别的。
+
+## 编译入口
+
+在 compiler 初始化完成之后，调用了 compiler.compile 执行编译
+
+```js title="lib/Compiler.js"
+compile(callback) {
+  this.hooks.beforeCompile.callAsync(params, err => {
+    const compilation = this.newCompilation(params);
+
+    // ...
+    this.hooks.make.callAsync(compilation, err => {
+      // ...
+    });
+  });
+}
+```
+
+`hooks.make.tap`是一次编译的发令枪，具体的执行过程在事件的订阅函数当中，可通过搜索 `hooks.make.tap` 找到对应的处理函数
+
+```js
+grep -rn hooks.make.tap ./lib
+```
+
+得到
+
+```js
+./lib/AutomaticPrefetchPlugin.js:  compiler.hooks.make.tapAsync(
+./lib/PrefetchPlugin.js:  compiler.hooks.make.tapAsync("PrefetchPlugin", (compilation, callback) => {
+./lib/EntryPlugin.js:  compiler.hooks.make.tapAsync("EntryPlugin", (compilation, callback) => {
+./lib/DynamicEntryPlugin.js:  compiler.hooks.make.tapAsync(
+./lib/DllEntryPlugin.js:  compiler.hooks.make.tapAsync("DllEntryPlugin", (compilation, callback) => {
+```
+
+make 具体做的事情就在这几个回调函数里面。从名字可以区分大概是什么内容，这里从 EntryPlugin.js 开始研究，这个插件是用来处理配置的 entry，编译自然是从入口开始处理
+
+```js title="lib/EntryPlugin.js"
+const EntryDependency = require("./dependencies/EntryDependency");
+
+class EntryPlugin {
+  constructor(context, entry, name) {
+    this.context = context;
+    this.entry = entry;
+    this.name = name;
+  }
+
+  apply(compiler) {
+    // ...
+
+    compiler.hooks.make.tapAsync("EntryPlugin", (compilation, callback) => {
+      const { entry, name, context } = this;
+      const dep = EntryPlugin.createDependency(entry, name);
+      compilation.addEntry(context, dep, name, (err) => {
+        callback(err);
+      });
+    });
+  }
+
+  static createDependency(entry, name) {
+    const dep = new EntryDependency(entry);
+    dep.loc = { name };
+    return dep;
+  }
+}
+```
+
+这里的 entry 已经是单个入口文件，是在 compiler 初始化过程中的`WebpackOptionsApply`里面处理过的。流程非常长，也很绕，会注册很多很多的钩子，事件之间触发的顺序逻辑并不那么一目了然，最终会调用 NormalModule 的 build 方法，进行模块的编译。
+
+:::info 🤔
+了解 compilation 过程，主要想关注的是如何读取文件编译文件，addEntry 之后的调用链非常的长，会绕很长的路，而且并不是特别关注的主流程，不要去关注它的具体流程，把握主要流程即可。
+:::
+
+## 编译过程
+
+编译过程的实现在 NormalModule 里面，会先调用 build 函数，再调用 doBuild 函数
+
+```js
+const { getContext, runLoaders } = require("loader-runner");
+
+class NormalModule extends Module {
+  build(options, compilation, resolver, fs, callback) {
+    return this.doBuild(options, compilation, resolver, fs, (err) => {
+      const handleParseResult = (result) => {
+        // ...
+        return callback();
+      };
+
+      // ...
+      handleParseResult(result);
+    });
+  }
+
+  // ...
+  doBuild(options, compilation, resolver, fs, callback) {
+    const processResult = (err, result) => {
+      // ...
+      return callback();
+    };
+
+    // ...
+    runLoaders(
+      {
+        resource: this.resource,
+        loaders: this.loaders,
+        context: loaderContext,
+        readResource: fs.readFile.bind(fs),
+      },
+      (err, result) => {
+        // ...
+        processResult(err || err2, result.result);
+      }
+    );
+  }
+}
+```
+
+doBuild 里面是调用 runLoaders 执行 loaders，loaders 执行之后是调用回调，每一步执行完成之后，依次调用外部传入的回调。
+根据调用顺序，先看 runLoaders 的执行情况，需要的时候再关注回调中的继续执行过程。
+
+### runLoaders
+
+调用了 runLoaders 去运行 loader 对文件进行具体转换。省略中间的过程，直接看 runLoaders 的参数是什么，输出又是什么。假设有这样一个例子
+
+<Tabs>
+  <TabItem value="webpack.config.js" label="webpack.config.js" default>
+
+```js
+module.exports = {
+  target: "web",
+  mode: "production",
+  entry: {
+    app: "./app.js",
+  },
+  output: {
+    filename: "[name][hash].js",
+    path: path.resolve(__dirname, "dist"),
+    publicPath: "",
+  },
+  module: {
+    rules: [
+      {
+        test: /\.js$/i,
+        use: {
+          loader: "babel-loader",
+          options: {
+            presets: ["@babel/preset-env"],
+          },
+        },
+      },
+      {
+        test: /\.css$/i,
+        loader: "css-loader",
+      },
+    ],
+  },
+};
+```
+
+</TabItem>
+<TabItem value="app.js" label="app.js">
+
+```js
+import "./style.css";
+console.log("Hello World!!!");
+```
+
+  </TabItem>
+  <TabItem value="style.css" label="style.css">
+
+```css
+.hello {
+  color: red;
+}
+```
+
+  </TabItem>
+</Tabs>
+
+则 `runLoaders` 的参数示例如下
+
+<Tabs>
+  <TabItem value="app.js" label="app.js" default>
+
+```js
+source: "/Users/esmyy/webpack-demo/app.js";
+loaders: [
+  {
+    loader: "/Users/fengpeng/node_modules/babel-loader/lib/index.js",
+    options: { presets: [Array] },
+    ident: "ruleSet[1].rules[0].use",
+  },
+];
+```
+
+</TabItem>
+  <TabItem value="style.css" label="style.css">
+
+```css
+source: "/Users/esmyy/webpack-demo/style.css";
+loaders: [
+  {
+    loader: "/Users/fengpeng/node_modules/css-loader/dist/cjs.js",
+    options: undefined,
+    ident: undefined,
+  },
+];
+```
+
+</TabItem>
+</Tabs>
+
+注意到 `runLoaders`参数中传输了完成的模块路径，传入了 readFile 函数用以读取模块源内容。对每个模块，runLoaders 会读取源文件，使用 rules 所匹配的 loaders 去转换。runLoaders 是真正开始读取源文件的起点，但是 loader 相关的过程暂时不去深入，loader 需要单独的章节去梳理。目前把握主流程时直接看一下 runLoaders 返回的结果即可
+
+<Tabs>
+  <TabItem value="app.js" label="app.js" default>
+
+```js
+// app.js
+["import './style.css';\nconsole.log('Hello World!!!');", null];
+```
+
+</TabItem>
+<TabItem value="style.css" label="style.css" default>
+
+```js
+[
+  "// Imports\n" +
+    'var ___CSS_LOADER_API_IMPORT___ = require("../../../../node_modules/css-loader/dist/runtime/api.js");\n' +
+    "exports = ___CSS_LOADER_API_IMPORT___(false);\n" +
+    "// Module\n" +
+    'exports.push([module.id, ".hello {\\n  color: red;\\n}\\n", ""]);\n' +
+    "// Exports\n" +
+    "module.exports = exports;\n",
+];
+```
+
+</TabItem>
+</Tabs>
+
+显然从 app.js 进过 babel-loader 的处理结果看，这里还没有得到最终编译的结果，只是做了一部分转换。还需要进一步看这个返回如何使用，继续看一下 `processResult`的处理
+
+```js title="doBuild 里面的 processResult"
+const processResult = (err, result) => {
+  // ...略
+
+  // result 完整的情况下是一个数组 [source, sourceMap, extraInfo]
+  const source = result[0];
+  const sourceMap = result.length >= 1 ? result[1] : null;
+  const extraInfo = result.length >= 2 ? result[2] : null;
+
+  // 转换为统一的source表示结果
+  this._source = this.createSource(
+    options.context,
+    this.binary ? asBuffer(source) : asString(source),
+    sourceMap,
+    compilation.compiler.root
+  );
+
+  // ...略
+
+  // loader 中是否已经转换为 ast 了，如果loader中已经返回ast，则直接复用，后面就不用重复生成了，在本例子中都是 null
+  this._ast =
+    typeof extraInfo === "object" &&
+    extraInfo !== null &&
+    extraInfo.webpackAST !== undefined
+      ? extraInfo.webpackAST
+      : null;
+  return callback();
+};
+```
+
+runLoaders 的结果完整的情况下是一个数组 `[source, sourceMap, extraInfo]`，在本例子中 sourceMap 和 extraInfo 都不是有效值，暂时也不用关注。`_ast`的设置是为了避免重复生成 AST，这是 loader 相关的内容，在本例中是 null。最后看一下 \_source 的结果，其实就是把模块转换为统一的结果，支持 String 和 Buffer 两种格式
+
+<Tabs>
+  <TabItem value="app.js" label="app.js" default>
+
+```js
+{
+  _valueIsBuffer: false,
+  _value: "import './style.css';\nconsole.log('Hello World!!!');",
+  _valueAsBuffer: undefined,
+  _valueAsString: "import './style.css';\nconsole.log('Hello World!!!');"
+}
+```
+
+</TabItem>
+  <TabItem value="styles.css" label="styles.css" default>
+
+```js
+{
+  _valueIsBuffer: false,
+  _value: '// Imports\n' +
+    'var ___CSS_LOADER_API_IMPORT___ = require("../../../../node_modules/css-loader/dist/runtime/api.js");\n' +
+    'exports = ___CSS_LOADER_API_IMPORT___(false);\n' +
+    '// Module\n' +
+    'exports.push([module.id, ".hello {\\n  color: red;\\n}\\n", ""]);\n' +
+    '// Exports\n' +
+    'module.exports = exports;\n',
+  _valueAsBuffer: undefined,
+  _valueAsString: '// Imports\n' +
+    'var ___CSS_LOADER_API_IMPORT___ = require("../../../../node_modules/css-loader/dist/runtime/api.js");\n' +
+    'exports = ___CSS_LOADER_API_IMPORT___(false);\n' +
+    '// Module\n' +
+    'exports.push([module.id, ".hello {\\n  color: red;\\n}\\n", ""]);\n' +
+    '// Exports\n' +
+    'module.exports = exports;\n'
+}
+```
+
+</TabItem>
+</Tabs>
+
+总结一下，模块匹配的 loader 执行完之后，可能包含已经转换好的一个 AST，对于文件中的 import 关键字，并没有被替换掉，这在后面肯定是需要被替换的。
+
+:::caution
+需要一个总结，runLoaders 究竟是达到什么效果，输出为什么是这样
+
+<!-- TODO: 其实这里也有依赖收集，不然怎么可能获得style.css文件 -->
+
+:::
+
+### parse
+
+runLoaders 执行完成之后，调用了传入的 callback，下一步可以看看外层的层层回调各做了些什么事情，也就是后续的处理是什么。
+回头看一下 `doBuild`的回调
+
+```js
+doBuild(options, compilation, resolver, fs, (err) => {
+  // ...略
+
+  const handleParseResult = (result) => {
+    this.dependencies.sort(
+      concatComparators(
+        compareSelect((a) => a.loc, compareLocations),
+        keepOriginalOrder(this.dependencies)
+      )
+    );
+    this._lastSuccessfulBuildMeta = this.buildMeta;
+    this._initBuildHash(compilation);
+    return callback();
+  };
+
+  let result = this.parser.parse(this._ast || this._source.source(), {
+    current: this,
+    module: this,
+    compilation: compilation,
+    options: options,
+  });
+
+  handleParseResult(result);
+});
+```
+
+在 4.x 版本，parser 定义在 [lib/Parser.js](https://github.com/webpack/webpack/blob/v4.46.0/lib/Parser.js)，在 5.x 之后挪到了
+`lib/JavascriptParser.js` 中
+
+```js
+class JavascriptParser extends Parser {
+  parse(source, state) {
+    // ...略
+
+    ast = JavascriptParser.parse(source, {
+      sourceType: this.sourceType,
+      onComment: comments,
+      onInsertedSemicolon: (pos) => semicolons.add(pos),
+    });
+  }
+}
+```
+
+`parser.parse` 是根据当前的 source，使用 [acorn](https://github.com/acornjs/acorn) 这个解析工具，去生成 AST，根据 AST 提取到这个模块的依赖项，然后继续递归执行模块的编译过程，直到所有的依赖都处理完成。
+
+TODO: 关键是递归这块没捋清，在哪里递归没找到
+
+### seal
+
+最终整个依赖处理完成后，进入到模块的 seal 环节，seal 有以下几个步骤
+
+- chunk 生成：在前面的步骤中，各模块实例保存在 compilation.modules 上，seal 根据 entry 生成 chunk，生成 chunk hash
+- asset 生成：根据 chunk 生成 asset，在这一步，require 等引用被转换为使用内置的**webpack_require**引用
+
+asset 和 chunk 的区别是什么？假设我使用 MiniCssExtractPlugin 提取了 css，那么编译结果如下
+
+````js
+        Asset      Size  Chunks             Chunk Names
+app.bundle.js  4.31 KiB     app  [emitted]  app
+      app.css  4.18 KiB     app  [emitted]  app
+      ```
+````
+
+在 seal 阶段生成的 compilation.assets 对象，与我们最终打包出来的 Asset，只差临门一脚的输出。
+
+### emit
+
+compilation 执行完成之后，内存中已经有即将输出的文件了，保存在 compilation.assets，提取出来写到对应输出文件即可。
+
+```js
+assets = {
+  "app.css": {
+    _source: {
+      children: [
+        {
+          _value:
+            ".hello {\n  color: red;\n}\n.hello .world {\n  color: blue;\n}\n",
+        },
+        "\n",
+      ],
+    },
+    // ...
+  },
+  "app.bundle.js": {
+    // ...
+  },
+};
+```
