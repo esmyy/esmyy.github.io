@@ -161,7 +161,7 @@ class Compiler {
 
 `compiler.hooks` 定义了 compiler 所支持的所有事件，具体可参考[Compiler Hooks](https://webpack.js.org/api/compiler-hooks/)，由此 compiler 具备了事件发布/订阅的能力。compiler 执行过程中在对应的节点会发布相应的事件，触发已注册的处理函数执行。
 
-### 插件安装
+### 配置插件安装
 
 👨‍💻‍ Go On... 👨‍💻‍
 
@@ -227,7 +227,7 @@ const createCompiler = (options) => {
 
 这就表示环境已经准备好了。这里有点不太理解的地方，为什么不是最后再发布环境事件，而要在 compiler.options 设置之前呢？不过这个细节或许也不太重要。
 
-### options 插件安装
+### 安装内置插件
 
 最后是根据传递的 options，去安装内置插件
 
@@ -263,7 +263,7 @@ class WebpackOptionsApply extends OptionsApply {
 }
 ```
 
-以上只展示了原代码的一小部分内容。概括来说，这就是根据 options 中的配置，引入一个个内部提供的插件进行处理。基本上是下面这样的一个转换
+以上只展示了原代码的一小部分内容，概括来说，这就是根据 options 中的配置，引入一个个内部提供的插件进行处理。基本上是下面这样的一个转换
 
 ```js
 if (options.somePlugin) {
@@ -274,7 +274,8 @@ if (options.somePlugin) {
 
 这一步将 webpack 插件的设计体现的淋漓尽致。
 
-:::info 🤔
+### 小结结
+
 总结来说，compiler 初始化的过程，都围绕着 hooks 和 plugins 进行。
 
 - 定义事件：编译器支持那些事件
@@ -282,7 +283,6 @@ if (options.somePlugin) {
 - 发布事件：初始化本身也是编译过程的一部分，有一些事件节点
 
 让我觉得很受启发的，是 options 配置的各项转换为插件这个处理，很有意思。
-:::
 
 ## 2. 准备开始
 
@@ -354,16 +354,13 @@ compile(callback) {
 }
 ```
 
-以上依次触发了 beforeCompile, compile, make 事件，而 hooks.make 即开始编译。
-从调用 compiler.run 到 hooks.make，都只是在做准备工作，每个节点都通知一下，到了 make 这个位置，才是最后大哄一声 —— 现在真的要开始了。
-
-<!-- 具体的编译由 compilation，compilation 是编译最核心的过程，比较复杂，作为一个单独的环节去分析。 总之在这里 make 完成之后，表示文件已经进行了一次编译，之后是调用 compilation.finish 和 compilation.seal 去做一些收尾工作。 -->
+以上依次触发了 `beforeCompile`, `compile`, `make` 事件，hooks.make 是正式开始编译。从调用 compiler.run 到 hooks.make，都只是在做准备工作，每个节点都通知一下，到了 make 这个位置，才是最后大哄一声 —— 现在真的要开始了 😂。具体的编译由 compilation 负责，在这里 make 完成之后，表示文件已经进行了一次编译，之后是调用 compilation.finish 和 compilation.seal 做一些收尾工作。
 
 ## 3. 具体编译
 
-compilation 负责一次具体编译过程。具体的模块编译调度，compilation 根据 entry，使用 loader 对模块进行编译，生成 bundle。
+`compiler.hooks.make` 事件的触发是编译的发令枪，之后由`compilation` 负责一次具体编译过程，具体的模块编译调度。compilation 根据 entry，使用 loader 对模块进行编译，生成 bundle。
 
-compiler.hooks.make 的触发是编译的发令枪，通过搜索 hooks.make.tap 找到对应的订阅函数
+这里只能看到事件的触发，具体的执行过程在事件的订阅函数当中，可通过搜索 `hooks.make.tap` 找到对应的订阅函数。
 
 ```js
 grep -rn hooks.make.tap ./lib
@@ -379,9 +376,9 @@ grep -rn hooks.make.tap ./lib
 ./lib/DllEntryPlugin.js:  compiler.hooks.make.tapAsync("DllEntryPlugin", (compilation, callback) => {
 ```
 
-由此可以得知 make 具体做的事情，就在这几个地方注册的订阅函数里面。 我们研究 EntryPlugin.js(较早版本里面是 SingleEntryPlugin.js)，这个插件是用来处理配置的 entry，编译自然是从入口开始处理的
+由此可以得知 make 具体做的事情就在这几个回调函数里面。从名字可以区分大概是什么内容，这里我们从 EntryPlugin.js(较早版本里面是 SingleEntryPlugin.js)开始研究，这个插件是用来处理配置的 entry，编译自然是从入口开始处理
 
-```js
+```js title="lib/EntryPlugin.js"
 const EntryDependency = require("./dependencies/EntryDependency");
 
 class EntryPlugin {
@@ -396,7 +393,7 @@ class EntryPlugin {
 
     compiler.hooks.make.tapAsync("EntryPlugin", (compilation, callback) => {
       const { entry, name, context } = this;
-      const dep = EntryPlugin.createDependency(entry, name); // 将在webpack.config.js 中的entry文件转换为一个描述对象
+      const dep = EntryPlugin.createDependency(entry, name);
       compilation.addEntry(context, dep, name, (err) => {
         callback(err);
       });
