@@ -1,6 +1,10 @@
 # compilation
 
-compilation 负责一次具体编译过程。首先看一下 Compilation 实例化的过程，做了些什么
+compilation 负责一次具体编译过程，本文先介绍主要的流程
+
+## 初始化
+
+compilation 初始化的过程，与 compiler 类似，定义一坨事件和属性
 
 ```js
 class Compilation {
@@ -34,7 +38,7 @@ class Compilation {
 }
 ```
 
-compilation 初始化的过程，与 compiler 类似，不同的在于，compilation 的事件是 module 级别的，针对于模块编译过程中的事件，而 compiler 的是 process 级别的。
+compilation 定义的是 module 级别的事件，compiler 定义的是 process 级别的。
 
 ## 编译入口
 
@@ -101,10 +105,13 @@ class EntryPlugin {
 }
 ```
 
-这里的 entry 已经是单个入口文件，是在 compiler 初始化过程中的`WebpackOptionsApply`里面处理过的。流程非常长，也很绕，会注册很多很多的钩子，事件之间触发的顺序逻辑并不那么一目了然，最终会调用 NormalModule 的 build 方法，进行模块的编译。
+这里的 entry 已经是单个入口文件，是在 compiler 初始化过程中的`WebpackOptionsApply`里面处理过的。addEntry 之后的调用链非常的长，会绕很长的路，太过复杂，暂不深入。
 
-:::info 🤔
-了解 compilation 过程，主要想关注的是如何读取文件编译文件，addEntry 之后的调用链非常的长，会绕很长的路，而且并不是特别关注的主流程，不要去关注它的具体流程，把握主要流程即可。
+<!-- 流程非常长，也很绕，会注册很多很多的钩子，事件之间触发的顺序逻辑并不那么一目了然，最终会调用 NormalModule 的 build 方法，进行模块的编译。
+流程非常长，也很绕，会注册很多很多的钩子，事件之间触发的顺序逻辑并不那么一目了然， -->
+
+:::caution TODO
+这块还是太绕了，没有捋清楚，感觉断节了。
 :::
 
 ## 编译过程
@@ -306,7 +313,13 @@ const processResult = (err, result) => {
 };
 ```
 
-runLoaders 的结果完整的情况下是一个数组 `[source, sourceMap, extraInfo]`，在本例子中 sourceMap 和 extraInfo 都不是有效值，暂时也不用关注。`_ast`的设置是为了避免重复生成 AST，这是 loader 相关的内容，在本例中是 null。最后看一下 \_source 的结果，其实就是把模块转换为统一的结果，支持 String 和 Buffer 两种格式
+runLoaders 的结果完整的情况下是一个数组
+
+```js
+[source, sourceMap, extraInfo];
+```
+
+例子中 sourceMap 和 extraInfo 都不是有效值，暂时也不用关注。`_ast`的设置是为了避免重复生成 AST，这是 loader 相关的内容，在本例中是 null。最后看一下 \_source 的结果，其实就是把模块转换为统一的结果，支持 String 和 Buffer 两种格式
 
 <Tabs>
   <TabItem value="app.js" label="app.js" default>
@@ -358,7 +371,7 @@ runLoaders 的结果完整的情况下是一个数组 `[source, sourceMap, extra
 
 ### parse
 
-runLoaders 执行完成之后，调用了传入的 callback，下一步可以看看外层的层层回调各做了些什么事情，也就是后续的处理是什么。
+runLoaders 执行完成之后，调用了传入的 callback，下一步需要看看外层的回调各做了些什么事情。
 回头看一下 `doBuild`的回调
 
 ```js

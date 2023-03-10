@@ -1,6 +1,8 @@
 # loader
 
-loader 本身是一个函数，主要用于对模块的源代码进行转换，输出转换的结果。 Loader 的另一个作用是将 JS，JSON 外的文件类型转换为有效的 JS 模块，正因如此才可以添加到依赖图中。 loader 的配置示例如下
+> Loaders are transformations that are applied to the source code of a module. They allow you to pre-process files as you import or “load” them. Thus, loaders are kind of like “tasks” in other build tools and provide a powerful way to handle front-end build steps. Loaders can transform files from a different language (like TypeScript) to JavaScript or load inline images as data URLs. Loaders even allow you to do things like import CSS files directly from your JavaScript modules!
+
+loader 本身是一个函数，用于模块的转换，包括非内置支持的模块(JS,JSON 之外)转换为 JS 模块，或者是将上一个 loader 的输出进一步处理。
 
 ```js
 const path = require("path");

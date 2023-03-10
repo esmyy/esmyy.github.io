@@ -3,6 +3,10 @@
 > Webpack CLI provides the interface of options webpack uses in its configuration file. The CLI options override options passed in the configuration file.
 > The CLI provides a rich set of commands that helps you develop your application faster.
 
+| pkg         | version |
+| ----------- | ------- |
+| webpack-cli | 4.6.0   |
+
 ## 入口
 
 如果使用 nvm 管理 Node，熟悉 nvm 的话，可以知道 webpack 命令在 node 的 bin 目录下，对应源码中的 `webpack/bin/webpack.js`

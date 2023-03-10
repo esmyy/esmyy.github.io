@@ -1,4 +1,4 @@
-# source map
+# sourcemap
 
 source map 可以理解资源地图，也可以理解为模块字典，在 Devtool (opens new window)中的说明很详细了。 不过并不需要过分关注其细节，source map 一个是用来开发环节调试，一个是用来做生产环境错误追踪。
 

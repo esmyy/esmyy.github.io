@@ -20,44 +20,42 @@ webpack 的核心组成如下
 
 webpack 从 Entry 开始分析，收集依赖，生成依赖地图，通过 Loaders 转换各个模块。在整个处理过程中，在每个关键节点，根据需要应用不同的 Plugin，用于处理 Loader 之外的所有其他任务。
 
-## 事件流机制
+## 调试方法
 
-webpack 的处理过程是一个基于 [Tapable](https://github.com/webpack/tapable) 的事件流，简单来说，就是在 webpack 处理的每个关键节点，都定义了相应的事件，在使用时，可以通过 Tapable 提前注册事件处理函数，在处理到对应的节点时，就会调用已经注册的处理函数。
-
-```mermaid
-gitGraph
-  commit id:"开始编译"
-  commit
-  commit
-  commit id:"......"
-  commit
-  commit
-  commit id:"编译结束"
-```
-
-Tapable 类似于 EventEmitter，或者更简单的 [mitt](https://github.com/developit/mitt)，是一个事件发布/订阅的工具。示例如下
+在 vscode 中添加一个 launch 配置
 
 ```js
-const { SyncHook } = require("tapable");
-
-// 定义钩子
-class Car {
-  constructor() {
-    this.hooks = {
-      brake: new SyncHook(),
-    };
-  }
+{
+  // 使用 IntelliSense 了解相关属性。
+  // 悬停以查看现有属性的描述。
+  // 欲了解更多信息，请访问: https://go.microsoft.com/fwlink/?linkid=830387
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "启动webpack调试程序",
+      "skipFiles": ["<node_internals>/**"],
+      "program": "${workspaceFolder}/debug/start.js"
+    }
+  ]
 }
 
-const myCar = new Car();
-
-// 注册钩子函数
-myCar.hooks.brake.tap("test", () => {
-  console.log("test");
-});
-
-// 触发事件
-myCar.hooks.brake.call();
 ```
 
-特别的是，webpack 中注册处理函数的方式是插件，因此，webpack 中的插件可以理解为事件处理函数。
+添加 program 文件地址，示例如下
+
+```js
+const webpack = require("../lib/index.js");
+const config = require("./webpack.config");
+const compiler = webpack(config);
+compiler.run((err, stats) => {
+  if (err) {
+    console.error(err);
+  } else {
+    console.log(stats);
+  }
+});
+```
+
+这样就可以直接在 vscode 中添加断点，使用源码调试，vscode 的调试功能是很方便的。
