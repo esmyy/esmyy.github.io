@@ -4,34 +4,6 @@
 
 loader 本身是一个函数，用于模块的转换，包括非内置支持的模块(JS,JSON 之外)转换为 JS 模块，或者是将上一个 loader 的输出进一步处理。
 
-```js
-const path = require("path");
-
-module.exports = {
-  mode: "development",
-  entry: "./app.js",
-  output: {
-    filename: "[name].bundle.js",
-    path: path.resolve(__dirname, "dist"),
-    publicPath: "",
-  },
-  module: {
-    rules: [
-      {
-        test: /\.css$/i,
-        use: ["style-loader", "css-loader"],
-      },
-    ],
-  },
-};
-```
-
-按照官方 [loaders 介绍](https://webpack.js.org/concepts/loaders/) 所说
-
-> Loaders are evaluated/executed from right to left (or from bottom to top)。
-
-loaders 执行顺序是右到左，这其中必有蹊跷，这涉及到 loader 是如何执行(loader-runner)，以及 loader module 自身结构的问题了。
-
 ## loader-runner
 
 webpack 中使用 [loader-runner](https://github.com/webpack/loader-runner#readme) 来执行 loader。 loader-runner 可以在 webpack 中使用，也提供了独立的运行环境，可以在不安装 webpack 的情况下运行，以便于进行 loader 的开发和调试。 其核心函数 runLoaders 的格式如下
@@ -408,6 +380,36 @@ cssLoaderResult = `// Imports
 ```
 
 在浏览器中就可以使用 eval 执行 styleLoaderResult，其中 require 了 css-loader 导出内容对应模块，会提取出 css 内容交给 style-loader 进行 update。
+
+## 执行顺序
+
+```js
+const path = require("path");
+
+module.exports = {
+  mode: "development",
+  entry: "./app.js",
+  output: {
+    filename: "[name].bundle.js",
+    path: path.resolve(__dirname, "dist"),
+    publicPath: "",
+  },
+  module: {
+    rules: [
+      {
+        test: /\.css$/i,
+        use: ["style-loader", "css-loader"],
+      },
+    ],
+  },
+};
+```
+
+按照官方 [loaders 介绍](https://webpack.js.org/concepts/loaders/) 所说
+
+> Loaders are evaluated/executed from right to left (or from bottom to top)。
+
+loaders 执行顺序是右到左，这其中必有蹊跷，这涉及到 loader 是如何执行(loader-runner)，以及 loader module 自身结构的问题了。
 
 ## pitch 的十万个为什么
 

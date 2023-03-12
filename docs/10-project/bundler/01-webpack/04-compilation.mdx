@@ -1,46 +1,10 @@
 # compilation
 
-compilation 负责一次具体编译过程，本文先介绍主要的流程
+compilation 负责一次具体编译过程，这个过程中关注的是从 entry 的读，到 output 的写。
 
-## 初始化
+本文介绍主要的流程。
 
-compilation 初始化的过程，与 compiler 类似，定义一坨事件和属性
-
-```js
-class Compilation {
-  constructor(compiler) {
-    const getNormalModuleLoader = () => deprecatedNormalModuleLoaderHook(this);
-    this.hooks = Object.freeze({
-      buildModule: new SyncHook(["module"]),
-      rebuildModule: new SyncHook(["module"]),
-      failedModule: new SyncHook(["module", "error"]),
-      succeedModule: new SyncHook(["module"]),
-      stillValidModule: new SyncHook(["module"]),
-      addEntry: new SyncHook(["entry", "name"]),
-      failedEntry: new SyncHook(["entry", "name", "error"]),
-      succeedEntry: new SyncHook(["entry", "name", "module"]),
-      // ...一堆事件定义
-    });
-
-    this.factorizeQueue = new AsyncQueue({
-      name: "factorize",
-      parallelism: options.parallelism || 100,
-      processor: this._factorizeModule.bind(this),
-    });
-
-    this.name = undefined;
-    this.compiler = compiler;
-    const options = compiler.options;
-    this.options = options;
-    this.profile = (options && options.profile) || false;
-    // ...一堆属性定义
-  }
-}
-```
-
-compilation 定义的是 module 级别的事件，compiler 定义的是 process 级别的。
-
-## 编译入口
+## 定位入口
 
 在 compiler 初始化完成之后，调用了 compiler.compile 执行编译
 
@@ -105,14 +69,169 @@ class EntryPlugin {
 }
 ```
 
-这里的 entry 已经是单个入口文件，是在 compiler 初始化过程中的`WebpackOptionsApply`里面处理过的。addEntry 之后的调用链非常的长，会绕很长的路，太过复杂，暂不深入。
+这里的 entry 对应到 webpack.config.js 里面配置的一个入口文件，注意是一个，对于多入口的配置，在 compiler 初始化过程中的`WebpackOptionsApply`里面已经处理，理解为以下流程即可
 
-<!-- 流程非常长，也很绕，会注册很多很多的钩子，事件之间触发的顺序逻辑并不那么一目了然，最终会调用 NormalModule 的 build 方法，进行模块的编译。
-流程非常长，也很绕，会注册很多很多的钩子，事件之间触发的顺序逻辑并不那么一目了然， -->
+```js
+entries.forEach((entry) => {
+  addEntry(entry);
+});
+```
 
-:::caution TODO
-这块还是太绕了，没有捋清楚，感觉断节了。
-:::
+addEntry 之后的调用链比较长，中间具体过程就不展示了
+
+```js
+addEntry -> addModuleChain -> handleModuleCreation -> factorizeModule.add
+```
+
+factorizeQueue 是 compilation 的构造函数中声明的
+
+```js
+const AsyncQueue = require("./util/AsyncQueue");
+class Compilation {
+  constructor(compiler) {
+    // ...略
+    this.factorizeQueue = new AsyncQueue({
+      name: "factorize",
+      parallelism: options.parallelism || 100,
+      processor: this._factorizeModule.bind(this),
+    });
+  }
+}
+```
+
+看一下 add 函数的实现
+
+```js title="lib/util/AsyncQueue.js"
+class AsyncQueue {
+  constructor({ name, parallelism, processor, getKey }) {
+    this._entries = new Map();
+    this._queued = [];
+  }
+  // ...略
+
+  add(item, callback) {
+    // ...略
+    this.hooks.beforeAdd.callAsync(item, (err) => {
+      // ...略
+      const key = this._getKey(item);
+      const entry = this._entries.get(key);
+      if (entry !== undefined) {
+        entry.callbacks.push(callback);
+        return;
+      }
+
+      const newEntry = new AsyncQueueEntry(item, callback);
+      this._entries.set(key, newEntry);
+      this._queued.push(newEntry);
+      setImmediate(this._ensureProcessing);
+      this.hooks.added.call(item);
+    });
+  }
+}
+```
+
+注意这里对于 \_ensureProcessing 是一个异步的执行，而前面说到 addEntry 可以理解为
+
+```js
+entries.forEach((entry) => {
+  addEntry(entry);
+});
+```
+
+所以当所有的 entry 都被添加之后，才是执行\_ensureProcessing。最终所有的 entry 会被保存到 compilation.factorizeQueue.\_entries 里面去。
+需要注意的是，这里的 added 仍旧不涉及到源文件的读，只是逻辑关系的添加，所以 callback 并不在这里执行，因为不是真正的 added。
+
+下一步看一下 \_ensureProcessing 的执行
+
+```js
+class AsyncQueue {
+  // ...略
+  _ensureProcessing() {
+    while (this._activeTasks < this._parallelism && this._queued.length > 0) {
+      const entry = this._queued.pop();
+      this._activeTasks++;
+      entry.state = PROCESSING_STATE;
+      this._startProcessing(entry);
+    }
+    this._willEnsureProcessing = false;
+  }
+
+  _startProcessing(entry) {
+    // ...略
+    this._processor(entry.item, (e, r) => {
+      inCallback = true;
+      this._handleResult(entry, e, r);
+    });
+    this.hooks.started.call(entry.item);
+  }
+}
+```
+
+这里是从队列中取出 entry，对每个 entry 标记状态，然后调用了 `_processor`进行处理，这个 \_processor 是在 compilation 里面初始化时调用的，也就是 compilation.\_factorizeModule
+
+```js
+class Compilation {
+  _factorizeModule(
+    { currentProfile, factory, dependencies, originModule, context },
+    callback
+  ) {
+    factory.create(
+      {
+        contextInfo: {
+          issuer: originModule ? originModule.nameForCondition() : "",
+          compiler: this.compiler.name,
+        },
+        resolveOptions: originModule ? originModule.resolveOptions : undefined,
+        context: context
+          ? context
+          : originModule
+          ? originModule.context
+          : this.compiler.context,
+        dependencies: dependencies,
+      },
+      (err, result) => {
+        // ...
+      }
+    );
+  }
+}
+```
+
+这里的 factory 是 NormalModuleFactory，最终回调函数拿到的 result 是一个 factorize 之后的结构，那么 factorize 究竟是做了什么事情，得到怎样的一个结果呢？
+
+## 添加模块
+
+compilation 初始化的过程，与 compiler 类似，定义一坨事件和属性
+
+```js
+class Compilation {
+  constructor(compiler) {
+    const getNormalModuleLoader = () => deprecatedNormalModuleLoaderHook(this);
+    this.hooks = Object.freeze({
+      buildModule: new SyncHook(["module"]),
+      rebuildModule: new SyncHook(["module"]),
+      failedModule: new SyncHook(["module", "error"]),
+      succeedModule: new SyncHook(["module"]),
+      stillValidModule: new SyncHook(["module"]),
+      addEntry: new SyncHook(["entry", "name"]),
+      failedEntry: new SyncHook(["entry", "name", "error"]),
+      succeedEntry: new SyncHook(["entry", "name", "module"]),
+      // ...一堆事件定义
+    });
+
+    this.name = undefined;
+    this.compiler = compiler;
+    const options = compiler.options;
+    this.options = options;
+    this.profile = (options && options.profile) || false;
+    // ...一堆属性定义
+  }
+}
+```
+
+不同的是 compilation 定义的是 module 级别的事件，compiler 定义的是 process 级别的。
+
+## 添加模块
 
 ## 编译过程
 

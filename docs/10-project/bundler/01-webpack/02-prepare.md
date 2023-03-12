@@ -71,3 +71,109 @@ compiler 保存 webpack.config.js 的配置转换后的信息，也就是”该�
   commit
   commit
 ```
+
+## 调试方法
+
+下载 webpack 仓库
+
+```js
+git clone https://github.com/webpack/webpack.git
+
+cd webpack
+mkdir debug
+touch start.js
+```
+
+创建配置文件，入口文件
+<Tabs>
+<TabItem value="webpack.config.js" label="webpack.config.js" default>
+
+```js
+const path = require("path");
+module.exports = {
+  target: "web",
+  mode: "development",
+  entry: {
+    app: "./app.js",
+  },
+  output: {
+    filename: "[name][fullhash].js",
+    path: path.resolve(__dirname, "dist"),
+    publicPath: "",
+  },
+  devtool: "source-map",
+  module: {
+    rules: [
+      {
+        test: /\.js$/i,
+        use: {
+          loader: "babel-loader",
+          options: {
+            presets: ["@babel/preset-env"],
+          },
+        },
+      },
+      {
+        test: /\.css$/i,
+        loader: "css-loader",
+      },
+    ],
+  },
+};
+```
+
+</TabItem>
+<TabItem value="app.js" label="app.js">
+
+```js
+const a = 23;
+console.log("Hello World!!!", a);
+```
+
+</TabItem>
+<TabItem value="start.js" label="start.js">
+
+```js
+const webpack = require("../lib/index.js");
+const config = require("./webpack.config");
+const compiler = webpack(config);
+compiler.run((err, stats) => {
+  if (err) {
+    console.error("err");
+  } else {
+    console.log("stats");
+  }
+});
+```
+
+</TabItem>
+</Tabs>
+
+在 vscode 中添加一个 launch 配置
+
+```js
+{
+  // 使用 IntelliSense 了解相关属性。
+  // 悬停以查看现有属性的描述。
+  // 欲了解更多信息，请访问: https://go.microsoft.com/fwlink/?linkid=830387
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "启动webpack调试程序",
+      "skipFiles": ["<node_internals>/**"],
+      "program": "${workspaceFolder}/debug/start.js"
+    }
+  ]
+}
+
+```
+
+添加 program 文件地址为 start.js，然后尝试执行编译
+
+```js
+node debug/start.js
+```
+
+如果正常产出了 dist，说明配置正常，后面可以直接在 vscode 中添加断点，使用源码调试了。
