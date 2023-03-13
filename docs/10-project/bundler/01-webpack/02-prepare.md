@@ -94,7 +94,7 @@ module.exports = {
   target: "web",
   mode: "development",
   entry: {
-    app: "./app.js",
+    app: path.resolve(__dirname, "./app.js"),
   },
   output: {
     filename: "[name][fullhash].js",
@@ -126,8 +126,8 @@ module.exports = {
 <TabItem value="app.js" label="app.js">
 
 ```js
-const a = 23;
-console.log("Hello World!!!", a);
+const author = "liangzai";
+console.log("Hello ", author);
 ```
 
 </TabItem>

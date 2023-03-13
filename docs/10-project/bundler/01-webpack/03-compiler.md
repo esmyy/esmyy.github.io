@@ -1,10 +1,10 @@
 # compiler
 
-compiler 保存配置信息，也就是”该怎样去构建“的描述，根据配置定义和发布事件，负责整体的调度。
+compiler 保存配置信息，根据配置定义和发布事件，负责整体的调度。
 
 ## 前置概览
 
-webpack 定义，省略了暂时不必关注的内容，过程如下
+省略了暂时不必关注的内容，webpack 定义过程如下
 
 ```js title="lib/webpack.js"
 const webpack = (options, callback) => {
@@ -20,7 +20,7 @@ const webpack = (options, callback) => {
 };
 ```
 
-options 就是编译配置，可理解为 `webpack.config.js` 配置，callback 暂不用关注。createCompiler 如下
+options 可理解为 `webpack.config.js` 配置，callback 暂不用关注。createCompiler 如下
 
 ```js title="lib/webpack.js"
 const createCompiler = (options) => {
@@ -54,13 +54,11 @@ const createCompiler = (options) => {
 };
 ```
 
-内容很多，已经在代码中做了简要注释。理解 hooks 和 plugin 相关的初始化，对于理解 Webpack 工作流程至关重要。
+内容很多，已经在代码中做了简要注释，下面分节介绍。
 
-## 初始化
+<!-- 理解 hooks 和 plugin 相关的初始化，对于理解 Webpack 工作流程至关重要。 -->
 
-这一节中逐步了解 createCompiler 的过程，每一步做了什么
-
-### 创建 compiler
+## 实例化
 
 ```js
 compiler = new Compiler(options.context);
@@ -122,7 +120,7 @@ class Compiler {
 
 `compiler.hooks` 定义了 compiler 所支持的所有事件，具体可参考[Compiler Hooks](https://webpack.js.org/api/compiler-hooks/)，由此 compiler 具备了事件发布/订阅的能力。compiler 执行过程中在对应的节点会发布相应的事件，触发已注册的处理函数执行。
 
-### 配置插件安装
+## 插件安装
 
 👨‍💻‍ Go On... 👨‍💻‍
 
@@ -170,7 +168,7 @@ class NodeEnvironmentPlugin {
 在 compiler 初始化之后是执行插件的安装，插件的安装是订阅编译过程中的事件。
 :::
 
-### 发布环境事件
+## 发布环境事件
 
 👨‍💻‍ Go On... 👨‍💻‍ 在定义了事件，也添加了一些订阅事件之后，是内置的环境相关事件的发布，如下
 
@@ -188,7 +186,7 @@ const createCompiler = (options) => {
 
 这就表示环境已经准备好了。这里有点不太理解的地方，为什么不是最后再发布环境事件，而要在 compiler.options 设置之前呢？不过这个细节或许也不太重要。
 
-### 内置安装插件
+## 内置插件安装
 
 最后是根据传递的 options，去安装内置插件
 
@@ -265,30 +263,17 @@ run(callback) {
 compile(callback) {
   const params = this.newCompilationParams();
   this.hooks.beforeCompile.callAsync(params, err => {
-    if (err) return callback(err);
     this.hooks.compile.call(params);
+    // highlight-next-line
     const compilation = this.newCompilation(params);
-    const logger = compilation.getLogger("webpack.Compiler");
-    logger.time("make hook");
+    // highlight-next-line
     this.hooks.make.callAsync(compilation, err => {
-      logger.timeEnd("make hook");
-      if (err) return callback(err);
       process.nextTick(() => {
-        logger.time("finish compilation");
+        // highlight-next-line
         compilation.finish(err => {
-          logger.timeEnd("finish compilation");
-          if (err) return callback(err);
-
-          logger.time("seal compilation");
+          // highlight-next-line
           compilation.seal(err => {
-            logger.timeEnd("seal compilation");
-            if (err) return callback(err);
-
-            logger.time("afterCompile hook");
             this.hooks.afterCompile.callAsync(compilation, err => {
-              logger.timeEnd("afterCompile hook");
-              if (err) return callback(err);
-
               return callback(null, compilation);
             });
           });

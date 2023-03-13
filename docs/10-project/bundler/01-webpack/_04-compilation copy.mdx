@@ -1,0 +1,955 @@
+# 主要流程
+
+compilation 负责一次具体编译过程，这个过程中关注的是从 entry 的读，到 output 的写。
+
+本文介绍主要的流程。
+
+## 定位入口
+
+在 compiler 初始化完成之后，调用了 compiler.compile 执行编译
+
+```js title="lib/Compiler.js"
+compile(callback) {
+  this.hooks.beforeCompile.callAsync(params, err => {
+    const compilation = this.newCompilation(params);
+
+    // ...
+    this.hooks.make.callAsync(compilation, err => {
+      // ...
+    });
+  });
+}
+```
+
+`hooks.make.tap`是一次编译的发令枪，具体的执行过程在事件的订阅函数当中，可通过搜索 `hooks.make.tap` 找到对应的处理函数
+
+```js
+grep -rn hooks.make.tap ./lib
+```
+
+得到
+
+```js
+./lib/AutomaticPrefetchPlugin.js:  compiler.hooks.make.tapAsync(
+./lib/PrefetchPlugin.js:  compiler.hooks.make.tapAsync("PrefetchPlugin", (compilation, callback) => {
+./lib/EntryPlugin.js:  compiler.hooks.make.tapAsync("EntryPlugin", (compilation, callback) => {
+./lib/DynamicEntryPlugin.js:  compiler.hooks.make.tapAsync(
+./lib/DllEntryPlugin.js:  compiler.hooks.make.tapAsync("DllEntryPlugin", (compilation, callback) => {
+```
+
+make 具体做的事情就在这几个回调函数里面。从名字可以区分大概是什么内容，这里从 EntryPlugin.js 开始研究，这个插件是用来处理配置的 entry，编译自然是从入口开始处理
+
+```js title="lib/EntryPlugin.js"
+const EntryDependency = require("./dependencies/EntryDependency");
+
+class EntryPlugin {
+  constructor(context, entry, name) {
+    this.context = context;
+    this.entry = entry;
+    this.name = name;
+  }
+
+  apply(compiler) {
+    // ...
+
+    compiler.hooks.make.tapAsync("EntryPlugin", (compilation, callback) => {
+      const { entry, name, context } = this;
+      const dep = EntryPlugin.createDependency(entry, name);
+      compilation.addEntry(context, dep, name, (err) => {
+        callback(err);
+      });
+    });
+  }
+
+  static createDependency(entry, name) {
+    const dep = new EntryDependency(entry);
+    dep.loc = { name };
+    return dep;
+  }
+}
+```
+
+这里的 entry 对应到 webpack.config.js 里面配置的一个入口文件，注意是一个，对于多入口的配置，在 compiler 初始化过程中的`WebpackOptionsApply`里面已经处理，理解为以下流程即可
+
+```js
+entries.forEach((entry) => {
+  addEntry(entry);
+});
+```
+
+## 添加入口
+
+addEntry 的调用链比较长，中间具体过程就不展示了
+
+```js
+addEntry -> addModuleChain -> handleModuleCreation -> factorizeModule --> factorizeQueue.add
+```
+
+factorizeQueue 是 compilation 的构造函数中声明的
+
+```js
+const AsyncQueue = require("./util/AsyncQueue");
+class Compilation {
+  constructor(compiler) {
+    // ...略
+    this.factorizeQueue = new AsyncQueue({
+      name: "factorize",
+      parallelism: options.parallelism || 100,
+      processor: this._factorizeModule.bind(this),
+    });
+  }
+}
+```
+
+AsyncQueue 类中 add 方法的实现
+
+```js title="lib/util/AsyncQueue.js"
+class AsyncQueue {
+  constructor({ name, parallelism, processor, getKey }) {
+    this._entries = new Map();
+    this._queued = [];
+  }
+  // ...略
+
+  add(item, callback) {
+    // ...略
+    this.hooks.beforeAdd.callAsync(item, (err) => {
+      // ...略
+      const key = this._getKey(item);
+      const entry = this._entries.get(key);
+      if (entry !== undefined) {
+        entry.callbacks.push(callback);
+        return;
+      }
+
+      // highlight-next-line
+      const newEntry = new AsyncQueueEntry(item, callback);
+      this._entries.set(key, newEntry);
+      this._queued.push(newEntry);
+
+      // highlight-next-line
+      setImmediate(this._ensureProcessing);
+      this.hooks.added.call(item);
+    });
+  }
+}
+```
+
+阅读这段代码，需要得到一个比较概况的结论 —— 这个 add 到 added 的过程，是做了什么？
+
+首先简单对比一下，输入是什么结构，而“输出” newEntry 又是什么结构
+
+<Tabs>
+  <TabItem value="item" label="item" default>
+
+```js
+{
+  context: "/Users/esmyy/webpack-v5.0.0-beta.12"
+  currentProfile: undefined
+  originModule: null
+  dependencies: [
+    {
+      weak: false,
+      optional: false,
+      loc: {
+        name: "app",
+      },
+      request: "/Users/esmyy/webpack-v5.0.0-beta.12/debug/app.js",
+      userRequest: "/Users/esmyy/webpack-v5.0.0-beta.12/debug/app.js",
+      range: undefined,
+    }
+  ],
+}
+```
+
+  </TabItem>
+  <TabItem value="AsyncQueueEntry" label="AsyncQueueEntry" default>
+
+```js
+class AsyncQueueEntry {
+  constructor(item, callback) {
+    this.item = item;
+    this.callback = callback;
+    this.callbacks = undefined;
+    this.result = undefined;
+    this.error = undefined;
+  }
+}
+```
+
+  </TabItem>
+  <TabItem value="newEntry" label="newEntry" default>
+
+```js
+{
+  item: {
+    // ...略
+  },
+  callbacks = undefined,
+  result = undefined,
+  error = undefined,
+  callback: (err, newModule) => {
+    // ...略
+  }
+}
+```
+
+  </TabItem>
+</Tabs>
+可以看到, item 只是 entry 位置的一个描述，通过 `AsyncQueueEntry` 生成了一个 newEntry 用于后续保存这个入口文件相关的一些模块，结构等使用。注意这里对于 \_ensureProcessing 使用了异步的 setImmediate 执行，则对于多入口额配置，addEntry 可以理解为
+
+```js
+entries.forEach((entry) => {
+  addEntry(entry);
+  setImmediate(this._ensureProcessing);
+});
+```
+
+\_ensureProcessing 虽然是异步执行，但也是有顺序的，入口的添加仍旧是可以简单理解为一个 entry 处理完了进入下一个。
+
+最终所有的 entry 会被保存到 compilation.factorizeQueue.\_entries 里面去。
+
+\_ensureProcessing 的实现如下
+
+```js title="_ensureProcessing"
+class AsyncQueue {
+  // ...略
+  _ensureProcessing() {
+    while (this._activeTasks < this._parallelism && this._queued.length > 0) {
+      const entry = this._queued.pop();
+      this._activeTasks++;
+      entry.state = PROCESSING_STATE;
+      this._startProcessing(entry);
+    }
+    this._willEnsureProcessing = false;
+  }
+
+  _startProcessing(entry) {
+    // ...略
+    this._processor(entry.item, (e, r) => {
+      inCallback = true;
+      this._handleResult(entry, e, r);
+    });
+    this.hooks.started.call(entry.item);
+  }
+}
+```
+
+从队列中取出 entry，对每个 entry 标记状态，然后调用了 `_processor`进行处理。 \_processor 是在 compilation 里面初始化时调用的，也就是 compilation.\_factorizeModule
+
+```js
+class Compilation {
+  // ...略
+  _factorizeModule(
+    { currentProfile, factory, dependencies, originModule, context },
+    callback
+  ) {
+    factory.create(
+      {
+        contextInfo: {
+          issuer: originModule ? originModule.nameForCondition() : "",
+          compiler: this.compiler.name,
+        },
+        resolveOptions: originModule ? originModule.resolveOptions : undefined,
+        context: context
+          ? context
+          : originModule
+          ? originModule.context
+          : this.compiler.context,
+        dependencies: dependencies,
+      },
+      (err, result) => {
+        // ...
+        callback(null, newModule);
+      }
+    );
+  }
+}
+```
+
+这里的 factory 是 NormalModuleFactory，从字面意义上，factory.create 是模块的创建，不过这个创建不好理解，在一个编译过程中怎样叫做创建模块，是要转换为一种怎样的方式去描述模块？这是需要回答的问题。
+
+:::info 小结
+入口模块的添加，是一个个完成的，是 addSingleEntry，不是 addEntries。
+
+从 addEntry 调用到 added，这个过程是 entry 对象的初始化，做好从入口开始解析的环境准备工作。最终所有的 entry 都被保存到了 compilation.\_entries 里面去，然后再开始煮个读取，解析，分析其依赖等后续操作。
+:::
+
+## 模块解析
+
+前面在 addEntry 中，对于 entry 只是一个简单的描述，做了一些初始的准备工作，并不足以描述整个模块的内容，也尚未涉及到模块的读写等内容。
+
+### 创建
+
+从字面上看，factory 常用来创建对象，下面看一下 factory.create 做了什么事情
+
+```js title="lib/NormalModuleFactory.js"
+class NormalModuleFactory extends ModuleFactory {
+  // ...
+  create(data, callback) {
+    const resolveData = {
+      // ...略
+    };
+
+    this.hooks.beforeResolve.callAsync(resolveData, (err, result) => {
+      // ...略
+      this.hooks.factorize.callAsync(resolveData, (err, module) => {
+        // ...略
+        const factoryResult = {
+          module,
+          fileDependencies,
+          missingDependencies,
+          contextDependencies,
+        };
+
+        callback(null, factoryResult);
+      });
+    });
+  }
+}
+```
+
+在 create 里面，进行了所谓的 resolve 操作，也就是路径的处理，判断 entry 是否存在等，不同特别关注。关键在于这个 hooks.factorize，可以看到 factoryResult 的定义中包含了 `xxxDependencies` 这样的内容，很明显，如果这里是模块的依赖，那么在 `factorize` 事件的执行中，比如涉及到模块的读取和分析过程，不然怎么可能知道模块的依赖?
+
+搜索 hooks.factorize 找到注册处理函数的地方，在构造函数中，如下
+
+```js title="hooks.factorize"
+class NormalModuleFactory extends ModuleFactory {
+  constructor({ context, fs, resolverFactory, options }) {
+    // ...略
+    this.hooks.factorize.tapAsync(
+      {
+        name: "NormalModuleFactory",
+        stage: 100,
+      },
+      (resolveData, callback) => {
+        this.hooks.resolve.callAsync(resolveData, (err, result) => {
+          // ...略
+          this.hooks.afterResolve.callAsync(resolveData, (err, result) => {
+            // ...略
+            // highlight-next-line
+            createdModule = new NormalModule(createData);
+            createdModule = this.hooks.module.call(
+              createdModule,
+              createData,
+              resolveData
+            );
+
+            return callback(null, createdModule);
+          });
+        });
+      }
+    );
+  }
+}
+```
+
+这里的 NormalModule 就是模块的描述类，在内部有模块的读和分析等环节，终于，这里找到了模块的读的地方。在初始化完成之后，调用 hooks.module 抛出事件，然后就进行了返回。NormalModule 构造函数如下
+
+```js
+class NormalModule extends Module {
+  constructor({
+    type,
+    request,
+    userRequest,
+    rawRequest,
+    loaders,
+    resource,
+    matchResource,
+    parser,
+    generator,
+    resolveOptions,
+  }) {
+    super(type, getContext(resource));
+    this.request = request;
+    this.resource = resource;
+    this.loaders = loaders;
+    this.useSourceMap = false;
+    // ...略
+  }
+  // ...略
+}
+```
+
+只是简单做了一些必要的属性的初始化。那么经过层层回调的返回，最终在 factorizeModule 调用的回调中，进行模块的下一步操作
+
+```js title="handleModuleCreation"
+factorizeModule(
+  { currentProfile, factory, dependencies, originModule, context },
+  (err, newModule) => {
+    // ...略
+    this.addModule(newModule, (err, module) => {
+      this.buildModule(module, (err) => {
+        // ...略
+        this.processModuleDependencies(module, (err) => {
+          // ...略
+          callback(null, module);
+        });
+      });
+    });
+  }
+);
+```
+
+### addModule
+
+与 factorizeQueue 类似， addModule 的调用过程
+
+```js
+addModule -> addModuleQueue.add -> ... -> _addModule
+```
+
+```js title="addModule"
+class Compilation {
+  addModule(module, callback) {
+    this.addModuleQueue.add(module, callback);
+  }
+  _addModule(module, callback) {
+    // 判断缓存
+    if (alreadyAddedModule) {
+      return callback(null, alreadyAddedModule);
+    }
+
+    // 生成模块名称
+    // highlight-next-line
+    const cacheName = `${this.compilerPath}/module/${identifier}`;
+    this.cache.get(cacheName, null, (err, cacheModule) => {
+      // 添加到 Map
+      // highlight-next-line
+      this._modules.set(identifier, module);
+
+      // 添加到 Set
+      this.modules.add(module);
+
+      // 添加到模块地图
+      // highlight-next-line
+      ModuleGraph.setModuleGraphForModule(module, this.moduleGraph);
+      callback(null, module);
+    });
+  }
+}
+```
+
+添加操作，就是添加到某个地方，保存记录，做缓存，避免重复加载等使用
+
+### buildModule
+
+添加了模块的记录之后，从 buildModule 开始，进入到模块内容的读取分析过程
+
+```js
+class Compilation {
+  buildModule(module, callback) {
+    this.buildQueue.add(module, callback);
+  }
+  _buildModule(module, callback) {
+    module.needBuild(
+      {
+        fileSystemInfo: this.fileSystemInfo,
+      },
+      (err, needBuild) => {
+        // ...略
+        this.hooks.buildModule.call(module);
+        this.builtModules.add(module);
+        module.build(
+          this.options,
+          this,
+          this.resolverFactory.get("normal", module.resolveOptions),
+          this.inputFileSystem,
+          (err) => {
+            // ...略
+            this.cache.store(
+              `${this.compilerPath}/module/${module.identifier()}`,
+              null,
+              module,
+              (err) => {
+                // ...略
+                this.hooks.succeedModule.call(module);
+                return callback();
+              }
+            );
+          }
+        );
+      }
+    );
+  }
+}
+```
+
+在这里正式调用了模块方法，进行模块本身内容的处理。
+
+```js
+const { getContext, runLoaders } = require("loader-runner");
+
+class NormalModule extends Module {
+  build(options, compilation, resolver, fs, callback) {
+    return this.doBuild(options, compilation, resolver, fs, (err) => {
+      const handleParseResult = (result) => {
+        // ...
+        return callback();
+      };
+
+      // ...
+      handleParseResult(result);
+    });
+  }
+
+  // ...
+  doBuild(options, compilation, resolver, fs, callback) {
+    const processResult = (err, result) => {
+      // ...
+      return callback();
+    };
+
+    // ...
+    runLoaders(
+      {
+        resource: this.resource,
+        loaders: this.loaders,
+        context: loaderContext,
+        readResource: fs.readFile.bind(fs),
+      },
+      (err, result) => {
+        // ...
+        processResult(err || err2, result.result);
+      }
+    );
+  }
+}
+```
+
+doBuild 里面是调用 runLoaders 执行 loaders，loaders 执行之后是调用回调，每一步执行完成之后，依次调用外部传入的回调。
+根据调用顺序，先看 runLoaders 的执行情况，需要的时候再关注回调中的继续执行过程。
+
+#### 用例
+
+根据下面这个例子，分析解析的过程
+
+<Tabs>
+  <TabItem value="webpack.config.js" label="webpack.config.js" default>
+
+```js
+module.exports = {
+  target: "web",
+  mode: "development",
+  entry: {
+    app: path.resolve(__dirname, "./app.js"),
+  },
+  output: {
+    filename: "[name][hash].js",
+    path: path.resolve(__dirname, "dist"),
+    publicPath: "",
+  },
+  module: {
+    rules: [
+      {
+        test: /\.js$/i,
+        use: {
+          loader: "babel-loader",
+          options: {
+            presets: ["@babel/preset-env"],
+          },
+        },
+      },
+      {
+        test: /\.css$/i,
+        loader: "css-loader",
+      },
+    ],
+  },
+};
+```
+
+</TabItem>
+<TabItem value="app.js" label="app.js">
+
+```js
+import DEFAULT_AUTHOR from "./constants";
+import "./styles.css";
+
+const author = "liangzai";
+console.log("Hello ", DEFAULT_AUTHOR || author);
+```
+
+</TabItem>
+<TabItem value="constants.js" label="constants.js">
+
+```js
+export const DEFAULT_AUTHOR = "esmyy";
+```
+
+  </TabItem>
+  <TabItem value="style.css" label="style.css">
+
+```css
+.hello {
+  color: red;
+}
+```
+
+  </TabItem>
+</Tabs>
+
+#### runLoaders
+
+省略中间的过程，直接看 runLoaders 的参数是什么，输出又是什么，先把握整体情况。参数如下
+
+<Tabs>
+  <TabItem value="app.js" label="app.js" default>
+
+```js
+runLoaders({
+  source: "/Users/esmyy/webpack-demo/debug/app.js",
+  loaders: [
+    {
+      loader: "/Users/esmyy/node_modules/babel-loader/lib/index.js",
+      options: { presets: ["@babel/preset-env"] },
+      ident: "ruleSet[1].rules[0].use",
+    },
+  ],
+  context: {
+    // ... loader相关环境描述，工具方法等
+  },
+  readResource: fs.readFile.bind(fs),
+});
+```
+
+</TabItem>
+<TabItem value="constants.js" label="constants.js">
+
+```js
+runLoaders({
+  source: "/Users/esmyy/webpack-demo/debug/constants.js",
+  loaders: [
+    {
+      loader: "/Users/esmyy/node_modules/babel-loader/lib/index.js",
+      options: { presets: ["@babel/preset-env"] },
+      ident: "ruleSet[1].rules[0].use",
+    },
+  ],
+  context: {
+    // ... loader相关环境描述，工具方法等
+  },
+  readResource: fs.readFile.bind(fs),
+});
+```
+
+</TabItem>
+  <TabItem value="style.css" label="style.css">
+
+```js
+runLoaders({
+  source: "/Users/esmyy/webpack-demo/debug/style.css",
+  loaders: [
+    {
+      loader: "/Users/esmyy/node_modules/css-loader/dist/cjs.js",
+      options: undefined,
+      ident: undefined,
+    },
+  ],
+  context: {
+    // ... loader相关环境描述，工具方法等
+  },
+  readResource: fs.readFile.bind(fs),
+});
+```
+
+</TabItem>
+</Tabs>
+
+`runLoaders`参数中传输了完整的模块路径以及匹配的 loaders，传入了 readFile 函数，这应该是用以读取模块源内容的。看一看回调函数中的结果
+
+<Tabs>
+  <TabItem value="app.js" label="app.js" default>
+
+```js
+{
+  result: [
+    "import DEFAULT_AUTHOR from \"./constants\";\nimport \"./style.css\";\nvar author = \"liangzai\";\nconsole.log(\"Hello \", DEFAULT_AUTHOR || author);",
+    {
+      version: 3,
+      file: undefined,
+      names: [
+        "DEFAULT_AUTHOR",
+        "author",
+        "console",
+        "log",
+      ],
+      sourceRoot: undefined,
+      sources: [
+        "/Users/fengpeng/coding/Engineering/webpack-v5.0.0-beta.12/debug/app.js",
+      ],
+      sourcesContent: [
+        "import DEFAULT_AUTHOR from \"./constants\";\nimport \"./style.css\";\n\nconst author = \"liangzai\";\nconsole.log(\"Hello \", DEFAULT_AUTHOR || author);\n",
+      ],
+      mappings: "AAAA,OAAOA,cAAc,MAAM,aAAa;AACxC,OAAO,aAAa;AAEpB,IAAMC,MAAM,GAAG,UAAU;AACzBC,OAAO,CAACC,GAAG,CAAC,gBAAgB,EAAEH,cAAc,IAAIC,MAAM,CAAC",
+    },
+  ],
+  resourceBuffer: new Uint8Array(/* 省略 */),
+  cacheable: true,
+  fileDependencies: [
+    "/Users/fengpeng/coding/Engineering/webpack-v5.0.0-beta.12/debug/app.js",
+  ],
+  contextDependencies: [
+  ],
+  missingDependencies: [
+  ],
+}
+```
+
+</TabItem>
+<TabItem value="constants.js" label="constants.js">
+
+```js
+{
+  result: [
+    "export var DEFAULT_AUTHOR = \"esmyy\";",
+    {
+      version: 3,
+      file: undefined,
+      names: [
+        "DEFAULT_AUTHOR",
+      ],
+      sourceRoot: undefined,
+      sources: [
+        "/Users/fengpeng/coding/Engineering/webpack-v5.0.0-beta.12/debug/constants.js",
+      ],
+      sourcesContent: [
+        "export const DEFAULT_AUTHOR = \"esmyy\";\n",
+      ],
+      mappings: "AAAA,OAAO,IAAMA,cAAc,GAAG,OAAO",
+    },
+  ],
+  resourceBuffer: new Uint8Array(/* 省略 */),
+  cacheable: true,
+  fileDependencies: [
+    "/Users/fengpeng/coding/Engineering/webpack-v5.0.0-beta.12/debug/constants.js",
+  ],
+  contextDependencies: [
+  ],
+  missingDependencies: [
+  ],
+}
+```
+
+</TabItem>
+<TabItem value="style.css" label="style.css" default>
+
+```js
+{
+  result: [
+    "// Imports\nvar ___CSS_LOADER_API_IMPORT___ = require(\"../node_modules/.store/css-loader@3.6.0/node_modules/css-loader/dist/runtime/api.js\");\nexports = ___CSS_LOADER_API_IMPORT___(false);\n// Module\nexports.push([module.id, \".hello {\\n\\tcolor: red;\\n}\\n\", \"\"]);\n// Exports\nmodule.exports = exports;\n",
+  ],
+  resourceBuffer: new Uint8Array(/* 省略 */),
+  cacheable: true,
+  fileDependencies: [
+    "/Users/fengpeng/coding/Engineering/webpack-v5.0.0-beta.12/debug/style.css",
+  ],
+  contextDependencies: [
+  ],
+  missingDependencies: [
+  ],
+}
+```
+
+</TabItem>
+</Tabs>
+
+从入参和结果的对比中，显然 runLoaders 会读取源文件，使用 rules 所匹配的 loaders 去转换。runLoaders 是真正读取源文件的起点，但是 loader 相关的过程暂时不去深入，loader 需要单独的章节去梳理。
+从 app.js 的结果看，文件中的 import 关键字，并没有被替换掉，所以这里还没有得到最终编译的结果，只是做了一部分转换。继续看一下 `processResult`的处理
+
+```js title="doBuild 里面的 processResult"
+const processResult = (err, result) => {
+  // ...略
+
+  // result 完整的情况下是一个数组 [source, sourceMap, extraInfo]
+  const source = result[0];
+  const sourceMap = result.length >= 1 ? result[1] : null;
+  const extraInfo = result.length >= 2 ? result[2] : null;
+
+  // 转换为统一的source表示结果
+  this._source = this.createSource(
+    options.context,
+    this.binary ? asBuffer(source) : asString(source),
+    sourceMap,
+    compilation.compiler.root
+  );
+
+  // ...略
+
+  // loader 中是否已经转换为 ast 了，如果loader中已经返回ast，则直接复用，后面就不用重复生成了，在本例子中都是 null
+  this._ast =
+    typeof extraInfo === "object" &&
+    extraInfo !== null &&
+    extraInfo.webpackAST !== undefined
+      ? extraInfo.webpackAST
+      : null;
+  return callback();
+};
+```
+
+runLoaders 的结果完整的情况下是一个数组
+
+```js
+[source, sourceMap, extraInfo];
+```
+
+sourceMap 和 extraInfo 暂时不用关注。最后 \_source 设置就是把模块的内容保存到模块的描述实例上，`_ast`的设置是为了避免重复生成 AST，这是 loader 相关的内容，在本例中是 null。
+
+:::note 小结
+runLoaders 负责模块源内容的读取，使用匹配的 loader 进行处理转换，最终将相关的解析结果保存到 module 对象上。
+
+runLoaders 的具体实现，执行，不在此处深入，在 TODO:添加链接 一节进行说明。
+:::
+
+#### parse
+
+runLoaders 执行完成之后，调用了传入的 callback，回头看一下 `doBuild`的回调，外层做了些什么事情。
+
+```js
+doBuild(options, compilation, resolver, fs, (err) => {
+  // ...略
+
+  const handleParseResult = (result) => {
+    this.dependencies.sort(
+      concatComparators(
+        compareSelect((a) => a.loc, compareLocations),
+        keepOriginalOrder(this.dependencies)
+      )
+    );
+    this._lastSuccessfulBuildMeta = this.buildMeta;
+    this._initBuildHash(compilation);
+    return callback();
+  };
+
+  let result = this.parser.parse(this._ast || this._source.source(), {
+    current: this,
+    module: this,
+    compilation: compilation,
+    options: options,
+  });
+
+  handleParseResult(result);
+});
+```
+
+在 4.x 版本，parser 定义在 [lib/Parser.js](https://github.com/webpack/webpack/blob/v4.46.0/lib/Parser.js)，在 5.x 之后挪到了
+`lib/JavascriptParser.js` 中
+
+```js
+class JavascriptParser extends Parser {
+  parse(source, state) {
+    // ...略
+
+    // 得到ast
+    ast = JavascriptParser.parse(source, {
+      sourceType: this.sourceType,
+      onComment: comments,
+      onInsertedSemicolon: (pos) => semicolons.add(pos),
+    });
+
+    // ast分析处理
+    if (this.hooks.program.call(ast, comments) === undefined) {
+      this.detectStrictMode(ast.body);
+      this.prewalkStatements(ast.body);
+      this.blockPrewalkStatements(ast.body);
+      this.walkStatements(ast.body);
+    }
+  }
+}
+```
+
+`parser.parse` 是根据当前的 source，使用 [acorn](https://github.com/acornjs/acorn) 这个解析工具，去生成 AST。
+生成 AST 之后，再调用 detectStrictMode 等一些函数，对 AST 进行检查，分析依赖等，最终得到模块更详细的描述，在 buildModule 的回调中进行依赖的处理
+
+```js
+this.buildModule(module, (err) => {
+  // ...
+  this.processModuleDependencies(module, (err) => {
+    if (err) {
+      return callback(err);
+    }
+    callback(null, module);
+  });
+});
+```
+
+:::note 说明
+关于依赖处理不在此处深入，后面单独一节进行说明。
+:::
+
+#### seal
+
+最终整个依赖处理完成后，进入到模块的 seal 环节，seal 有以下几个步骤
+
+- chunk 生成：在前面的步骤中，各模块实例保存在 compilation.modules 上，seal 根据 entry 生成 chunk，生成 chunk hash
+- asset 生成：根据 chunk 生成 asset，在这一步，require 等引用被转换为使用内置的**webpack_require**引用
+
+asset 和 chunk 的区别是什么？假设我使用 MiniCssExtractPlugin 提取了 css，那么编译结果如下
+
+````js
+        Asset      Size  Chunks             Chunk Names
+app.bundle.js  4.31 KiB     app  [emitted]  app
+      app.css  4.18 KiB     app  [emitted]  app
+      ```
+````
+
+在 seal 阶段生成的 compilation.assets 对象，与我们最终打包出来的 Asset，只差临门一脚的输出。
+
+#### emit
+
+compilation 执行完成之后，内存中已经有即将输出的文件了，保存在 compilation.assets，提取出来写到对应输出文件即可。
+
+```js
+assets = {
+  "app.css": {
+    _source: {
+      children: [
+        {
+          _value:
+            ".hello {\n  color: red;\n}\n.hello .world {\n  color: blue;\n}\n",
+        },
+        "\n",
+      ],
+    },
+    // ...
+  },
+  "app.bundle.js": {
+    // ...
+  },
+};
+```
+
+<!-- 所谓的模块创建，是以另一种更丰富全面的方式去描述一个模块
+
+factorize 之后，调用 callback，也就是 factorizeModule 调用时传入的回调。
+在 factorizeModule 传入的回调中，包含了 addModule, buildModule 调用，从此正式进入到模块的读取环节。 -->
+<!--
+## 添加模块
+
+在 factorizeModule 调用的回调中，正式执行模块的添加，也就是开始模块的读取。
+
+```js title="handleModuleCreation"
+factorizeModule(
+  { currentProfile, factory, dependencies, originModule, context },
+  (err, newModule) => {
+    // ...略
+    this.addModule(newModule, (err, module) => {
+      this.buildModule(module, (err) => {
+        // ...略
+        this.processModuleDependencies(module, (err) => {
+          // ...略
+          callback(null, module);
+        });
+      });
+    });
+  }
+);
+```
+
+根据上一节的内容，对于 entry 而言，这里的 newModule 是这样一个对象
+
+进入到模块处理环节。
+
+:::info 小结
+需要注意的是，这里的 added 仍旧不涉及到源文件的读，只是逻辑关系的添加，所以 callback 并不在这里执行，因为不是真正的 added。
+::: -->
