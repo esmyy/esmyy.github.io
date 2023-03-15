@@ -36,3 +36,46 @@ useEffect 中的 deps 相等性是如何判断的
 
 每次组件渲染时会对每一个 useEffect 标记需要做怎样的处理，是清除还是更新还是不需要更新，在渲染完成后遍历链表根据 tag 去执行操作
 是先清除上一轮的副作用，然后再执行本轮的 effect 的。
+
+## useCallback
+
+这个函数的作用是什么？究竟如何理解，每次传入的函数是否是一个一样的？难道不是每次都返回一个新的吗
+
+## useMemo 的作用
+
+## Q & A
+
+<details>
+  <summary>hooks带来的哪些好处</summary>
+  <div>逻辑复用，代码组织更灵活，写法更简单，代码复用更加可追踪，依赖关系比mixins更加清晰。</div>
+</details>
+
+<details>
+  <summary>列举常用的hooks</summary>
+  <div>useState, useEffect, useCallback, useMemo, useRef, useLayoutEffect </div>
+</details>
+
+<details>
+  <summary>Hooks 和 hoc 的区别，为什么不用 hoc</summary>
+  <div>HOC我几乎不怎么使用。HOC往往意外着属性的透传或者做一些处理，很麻烦，而且命名起来也有些麻烦，我觉得逻辑还是有些绕的。其实已经不用再特别在意HOC概念了，很多时候都是类似的使用方式，但是没有特别在意是否是HOC。</div>
+</details>
+
+<details>
+  <summary>useEffect(fn, []) 和 componentDidMount 有什么差异</summary>
+  <div></div>
+</details>
+
+<details>
+  <summary>useLayoutEffect </summary>
+  <div></div>
+</details>
+
+<details>
+  <summary>hooks的本质是什么？</summary>
+  <div>闭包</div>
+</details>
+
+<details>
+  <summary>为什么要求hooks必须在顶层调用</summary>
+  <div>这与react的实现机制有关。对于一个hooks而言，比如useState，如果有两个连续的useState都使用了同样的参数，那么如何区分谁是谁呢？对于编译器来说，只能通过顺序关系来标识，是一个较好的方式。hooks在一个Fiber节点中，以链表的形式存在，通过链表维护了先后顺序关系。</div>
+</details>
