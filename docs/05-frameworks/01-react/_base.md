@@ -1,29 +1,18 @@
 # base
 
-## Fragment
-
 <details>
   <summary>React.Fragment有</summary>
   <div>从使用上，肯定是在VDOM里面是一个独立的节点，只不过是比较特殊，标记不需要以一个Element的方式渲染到页面中而已。一般而言都能替换成div这样的元素</div>
 </details>
 
-## Virtual DOM
-
 <details>
-  <summary>有考虑过为什么 React，Vue 使用 Virtual DOM 吗</summary>
-  <div>
-    减少不必要的渲染，只更新涉及的组件。支持跨平台的编译。
-  </div>
+  <summary>jsx中的组件，没有用到react，为什么需要引入react?</summary>
+  <div>React 17之前的版本需要的吧，因为编译器并不识别jsx，需要使用babel进行转换。17之后的版本已经内置了babel引入，不需要再手动引入。</div>
 </details>
 
 <details>
-  <summary>VDOM一定会提高性能吗</summary>
-  <div>不一定，还要考虑设计实现的结构。VDOM不一定会提高性能，但是通过VDOM，可以做一些智能的管理，比如批量更新。能够更灵活地控制页面的刷新，减少渲染次数，但不一定提高了性能，diff本身也是有代价的，但是一般而言，是能提高性能的。</div>
-</details>
-
-<details>
-  <summary>简单介绍diff算法</summary>
-  <div>根据新的数据值，生成新的一个VDOM树，所谓的VDOM树，不管怎样，都只是一个DOM的另一种描述，然后多了很多附加的属性。diff算法就是比较每一个节点，简单来说，会比较...</div>
+  <summary>mixins的问题</summary>
+  <div>mixins最大的问题是维护的问题。在Vue2中使用的时候，发现使用了哪些mixins是不容易最终的，定义和使用是脱节的。mixins也存在命名重复的问题</div>
 </details>
 
 ## 事件

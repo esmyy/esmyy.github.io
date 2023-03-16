@@ -79,3 +79,16 @@ useEffect 中的 deps 相等性是如何判断的
   <summary>为什么要求hooks必须在顶层调用</summary>
   <div>这与react的实现机制有关。对于一个hooks而言，比如useState，如果有两个连续的useState都使用了同样的参数，那么如何区分谁是谁呢？对于编译器来说，只能通过顺序关系来标识，是一个较好的方式。hooks在一个Fiber节点中，以链表的形式存在，通过链表维护了先后顺序关系。</div>
 </details>
+
+<details>
+  <summary>useLayoutEffect和useEffect的区别</summary>
+  <div>useEffect是在视图更新之后，再去异步执行。而useLayoutEffect会在视图更新之前同步执行。如果更改了数据，会更新虚拟DOM，触发重新渲染。一般不做特别细致的分析，useLayoutEffect很少使用，只在出现闪烁的时候考虑使用即可。</div>
+  [参考](https://juejin.cn/post/6844904008402862094)
+</details>
+
+<details>
+  <summary>useLayoutEffect做SSR会有什么问题？</summary>
+  <div></div>
+</details>
+
+[参考](https://juejin.cn/post/6844904205371588615)

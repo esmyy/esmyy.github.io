@@ -417,3 +417,7 @@ then, catch, finally 很直观的功能的注册回调，回调的
 <!-- 与事件循环 -->
 
 ## 状态管理
+
+## Q & A
+
+[Promise 面试题](https://juejin.cn/post/6844904077537574919#heading-17)
