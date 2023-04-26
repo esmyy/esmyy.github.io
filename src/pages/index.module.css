@@ -1,23 +1,66 @@
-/**
- * CSS files with the .module.css suffix will be treated as CSS modules
- * and scoped locally.
- */
-
-.heroBanner {
-  padding: 4rem 0;
-  text-align: center;
+.firstScreen {
   position: relative;
-  overflow: hidden;
+  width: 100vw;
+  height: 100%;
+  background-position: bottom right;
+  background-size: cover;
+  background-image: url("https://cdn.jsdelivr.net/gh/esmyy/imghost@main/images/air-beijing-chengdu.jpg");
 }
 
-@media screen and (max-width: 996px) {
-  .heroBanner {
-    padding: 2rem;
-  }
+.introCard {
+  position: absolute;
+  left: 50%;
+  top: 30vh;
+  transform: translateX(-50%);
+  border-radius: 4px;
+  padding: 16px;
+  text-align: center;
+  min-width: 240px;
+  background-color: #fff;
 }
 
-.buttons {
+.avatar {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+}
+
+.selfIntro {
+  color: #333;
+}
+
+.summary {
+  font-size: 14px;
+}
+
+.links {
+  display: flex;
+  justify-content: center;
+  margin-top: 8px;
+}
+
+.links a {
+  color: #333;
+  text-decoration: underline;
+}
+
+.pictureIntroduction {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  line-height: 24px;
+}
+
+.descLine {
   display: flex;
   align-items: center;
-  justify-content: center;
+  color: #fff;
+}
+
+@media screen and (max-width: 768px) {
+  .lifeCard {
+    top: 25%;
+    padding: 12px;
+    padding-left: 20px;
+  }
 }
