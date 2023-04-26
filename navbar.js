@@ -16,11 +16,6 @@ module.exports = {
       position: "left",
     },
     {
-      to: "/docs/qa",
-      label: "Q & A",
-      position: "left",
-    },
-    {
       href: "https://github.com/esmyy",
       label: "GitHub",
       position: "right",
