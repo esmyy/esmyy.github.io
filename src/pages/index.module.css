@@ -7,60 +7,45 @@
   background-image: url("https://cdn.jsdelivr.net/gh/esmyy/imghost@main/images/air-beijing-chengdu.jpg");
 }
 
-.introCard {
+.links {
   position: absolute;
   left: 50%;
-  top: 30vh;
+  top: 40vh;
   transform: translateX(-50%);
   border-radius: 4px;
-  padding: 16px;
-  text-align: center;
-  min-width: 240px;
-  background-color: #fff;
-}
-
-.avatar {
-  width: 46px;
-  height: 46px;
-  border-radius: 50%;
-}
-
-.selfIntro {
-  color: #333;
-}
-
-.summary {
-  font-size: 14px;
-}
-
-.links {
+  padding: 24px;
+  color: #fff;
   display: flex;
   justify-content: center;
   margin-top: 8px;
 }
 
 .links a {
-  color: #333;
+  color: #fff;
   text-decoration: underline;
 }
 
-.pictureIntroduction {
+.pictureWrapper {
   position: absolute;
-  bottom: 20px;
-  right: 20px;
+  bottom: 32px;
+  right: 32px;
   line-height: 24px;
+  display: flex;
 }
 
-.descLine {
-  display: flex;
-  align-items: center;
-  color: #fff;
+.avatar {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  box-shadow: inset;
+}
+
+.pictureInfo {
+  margin-left: 16px;
 }
 
 @media screen and (max-width: 768px) {
-  .lifeCard {
-    top: 25%;
-    padding: 12px;
-    padding-left: 20px;
+  .links {
+    flex-direction: column;
   }
 }
